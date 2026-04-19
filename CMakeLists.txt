@@ -11,6 +11,8 @@ FetchContent_MakeAvailable(googletest)
 add_library(panda_lib
         Data/src/Matrix.cpp
         Data/src/Matrix_CPU.cpp
+        Utils/config/CASH_SIZE/CASH_SIZE.h
+        Utils/config/CASH_SIZE/CASH_SIZE.cpp
 )
 target_include_directories(panda_lib PUBLIC Data/includes)
 

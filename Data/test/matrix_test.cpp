@@ -217,6 +217,8 @@ INSTANTIATE_TEST_SUITE_P(
     ArithmeticOperationTest,
     ::testing::Values(
         ArithmeticParams{2080, 2080, 1, 2, 1},
+        ArithmeticParams{200, 200, 1, 2, 1},
+        ArithmeticParams{100, 100 , 3 , 4 , 1},
         ArithmeticParams{4, 7, 1, 2, 1}
     )
 );
