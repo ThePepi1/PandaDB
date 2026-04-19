@@ -15,7 +15,13 @@ add_library(panda_lib
         Utils/config/CASH_SIZE/CASH_SIZE.cpp
 )
 target_include_directories(panda_lib PUBLIC Data/includes)
+include(CheckCXXCompilerFlag)
 
+check_cxx_compiler_flag("-mavx2" HAS_AVX2)
+check_cxx_compiler_flag("-mfma" HAS_FMA)
+if(HAS_AVX2 AND HAS_FMA)
+    target_compile_options(panda_lib PRIVATE -mavx2 -mfma)
+endif()
 
 add_executable(PandaDB main.cpp)
 add_executable(PandaDB_tests
