@@ -1,6 +1,8 @@
 #include "../includes/Matrix_CPU.h"
 #include <array>
 #include <immintrin.h>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range2d.h>
 #include "../../Utils/config/CASH_SIZE/CASH_SIZE.h"
 
 namespace data {
@@ -108,41 +110,55 @@ namespace data {
         const size_t N = other.Columns();
 
         Matrix_CPU *result = new Matrix_CPU(M, N, 0);
+
         double *left = this->Data();
         double *right = other.Data();
         double *output = result->Data();
-        //Make lefovers out :D do i need it prbably not
+
         const size_t M_blocks = (M / config::ROWS_PER_L2_BLOCK) * config::ROWS_PER_L2_BLOCK;
         const size_t K_blocks = (K / config::SHARED_PER_CACHE_BLOCK) * config::SHARED_PER_CACHE_BLOCK;
         const size_t N_blocks = (N / config::COLS_PER_L1_BLOCK) * config::COLS_PER_L1_BLOCK;
 
+        tbb::parallel_for(
+            tbb::blocked_range2d<size_t>(0, M_blocks / config::ROWS_PER_L2_BLOCK,
+                                         0, N_blocks / config::COLS_PER_L1_BLOCK),
+            [&](const tbb::blocked_range2d<size_t> &r) {
+                for (size_t ib = r.rows().begin(); ib != r.rows().end(); ++ib) {
+                    for (size_t jb = r.cols().begin(); jb != r.cols().end(); ++jb) {
+                        size_t i_base = ib * config::ROWS_PER_L2_BLOCK;
+                        size_t j_base = jb * config::COLS_PER_L1_BLOCK;
 
-        for (size_t ib = 0; ib < M_blocks; ib += config::ROWS_PER_L2_BLOCK)
-            for (size_t kb = 0; kb < K_blocks; kb += config::SHARED_PER_CACHE_BLOCK)
-                for (size_t jb = 0; jb < N_blocks; jb += config::COLS_PER_L1_BLOCK) {
-                    double *left_cache = left + ib * K + kb;
-                    double *right_cache = right + kb * N + jb;
-                    double *output_cache = output + ib * N + jb;
+                        for (size_t kb = 0; kb < K_blocks; kb += config::SHARED_PER_CACHE_BLOCK) {
+                            double *left_cache = left + i_base * K + kb;
+                            double *right_cache = right + kb * N + j_base;
+                            double *output_cache = output + i_base * N + j_base;
 
-                    for (size_t i2 = 0; i2 < config::ROWS_PER_L2_BLOCK; i2 += config::ROWS_PER_REGISTER)
-                        for (size_t j2 = 0; j2 < config::COLS_PER_L1_BLOCK; j2 += config::COLS_PER_REGISTER) {
-                            double *left_reg = left_cache + i2 * K;
-                            double *right_reg = right_cache + j2;
-                            double *output_reg = output_cache + i2 * N + j2;
+                            for (size_t i2 = 0; i2 < config::ROWS_PER_L2_BLOCK; i2 += config::ROWS_PER_REGISTER)
+                                for (size_t j2 = 0; j2 < config::COLS_PER_L1_BLOCK; j2 += config::COLS_PER_REGISTER) {
+                                    double *left_reg = left_cache + i2 * K;
+                                    double *right_reg = right_cache + j2;
+                                    double *output_reg = output_cache + i2 * N + j2;
 
-                            multiply_block(output_reg, left_reg, right_reg, N, K);
+                                    multiply_block(output_reg, left_reg, right_reg, N, K);
+                                }
                         }
+                    }
                 }
+            }, tbb::auto_partitioner()
+        );
 
         for (size_t i = 0; i < M; ++i)
             for (size_t k = 0; k < K; ++k) {
                 double left_val = left[i * K + k];
+
                 for (size_t j = N_blocks; j < N; ++j)
                     output[i * N + j] += left_val * right[k * N + j];
+
                 if (i >= M_blocks || k >= K_blocks)
                     for (size_t j = 0; j < N_blocks; ++j)
                         output[i * N + j] += left_val * right[k * N + j];
             }
+
         return result;
     }
 }
