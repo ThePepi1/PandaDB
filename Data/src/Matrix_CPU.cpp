@@ -97,6 +97,8 @@ namespace data {
     }
 
     std::unique_ptr<IMatrix> Matrix_CPU::operator-(IMatrix &other) {
+        if (rows != other.Rows() || columns != other.Columns())
+            throw std::invalid_argument("Matrix dimensions must match for subtraction");
         auto result = std::make_unique<Matrix_CPU>(rows, columns);
         double *data_me = this->Data();
         double *data_other = other.Data();
