@@ -9,10 +9,8 @@ namespace data {
     class IMatrix {
     protected:
         std::size_t rows, columns;
-        std::size_t capacity;
         double* data;
 
-        void ensure_capacity(std::size_t new_cols);
 
     public:
         IMatrix(std::size_t rows, std::size_t columns);
@@ -20,8 +18,7 @@ namespace data {
 
         double& operator()(std::size_t row, std::size_t column);
 
-        // dynamic column push
-        void push_column(const double* col_values);
+        IMatrix(std::size_t rows, std::size_t columns, double* external_data);
 
         virtual std::unique_ptr<IMatrix> transpose() = 0;
         virtual std::unique_ptr<IMatrix> operator+(IMatrix& other) = 0;
