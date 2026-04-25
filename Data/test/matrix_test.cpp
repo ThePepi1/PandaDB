@@ -9,13 +9,13 @@ using namespace std;
 using namespace data;
 
 
-static void expect_matrix_near(IMatrix* A, IMatrix* B, double tol = 1e-9) {
-    EXPECT_EQ(A->Rows(), B->Rows());
-    EXPECT_EQ(A->Columns(), B->Columns());
+static void expect_matrix_near( IMatrix& A,  IMatrix& B, double tol = 1e-9) {
+    EXPECT_EQ(A.Rows(), B.Rows());
+    EXPECT_EQ(A.Columns(), B.Columns());
 
-    for (size_t r = 0; r < A->Rows(); r++)
-        for (size_t c = 0; c < A->Columns(); c++)
-            EXPECT_NEAR((*A)(r,c), (*B)(r,c), tol)
+    for (size_t r = 0; r < A.Rows(); r++)
+        for (size_t c = 0; c < A.Columns(); c++)
+            EXPECT_NEAR(A(r,c), B(r,c), tol)
                 << " mismatch at (" << r << "," << c << ")";
 }
 
@@ -81,19 +81,18 @@ TEST_P(ArithmeticOperationTest, Addition) {
 
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = (*m1) + (*m2);
+    auto result = (*m1) + (*m2);
 
     auto end = chrono::steady_clock::now();
 
     IMatrix* expected = new Matrix_CPU(p.rows, p.cols, p.a + p.b);
 
-    expect_matrix_near(result, expected);
+    expect_matrix_near(*result, *expected);
 
     cout << "Add: "
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
     delete expected;
 }
 
@@ -102,19 +101,18 @@ TEST_P(ArithmeticOperationTest, Subtraction) {
 
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = (*m1) - (*m2);
+    auto result = (*m1) - (*m2);
 
     auto end = chrono::steady_clock::now();
 
     IMatrix* expected = new Matrix_CPU(p.rows, p.cols, p.a - p.b);
 
-    expect_matrix_near(result, expected);
+    expect_matrix_near(*result, *expected);
 
     cout << "Sub: "
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
     delete expected;
 }
 
@@ -123,19 +121,18 @@ TEST_P(ArithmeticOperationTest, ScalarAddition) {
 
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = (*m1) + p.scalar;
+    auto result = (*m1) + p.scalar;
 
     auto end = chrono::steady_clock::now();
 
     IMatrix* expected = new Matrix_CPU(p.rows, p.cols, p.a + p.scalar);
 
-    expect_matrix_near(result, expected);
+    expect_matrix_near(*result, *expected);
 
     cout << "ScalarAdd: "
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
     delete expected;
 }
 
@@ -144,19 +141,18 @@ TEST_P(ArithmeticOperationTest, ScalarMultiply) {
 
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = (*m1) * p.scalar;
+    auto result = (*m1) * p.scalar;
 
     auto end = chrono::steady_clock::now();
 
     IMatrix* expected = new Matrix_CPU(p.rows, p.cols, p.a * p.scalar);
 
-    expect_matrix_near(result, expected);
+    expect_matrix_near(*result, *expected);
 
     cout << "ScalarMul: "
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
     delete expected;
 }
 TEST_P(ArithmeticOperationTest, Transpose) {
@@ -164,7 +160,7 @@ TEST_P(ArithmeticOperationTest, Transpose) {
 
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = m1->transpose();
+    auto result = m1->transpose();
 
     auto end = chrono::steady_clock::now();
 
@@ -182,12 +178,12 @@ TEST_P(ArithmeticOperationTest, Transpose) {
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
 }
 TEST_P(ArithmeticOperationTest, Multiply) {
+    auto right = m2->transpose();
     auto start = chrono::steady_clock::now();
 
-    IMatrix* result = (*m1) * (*(m2->transpose()));
+    auto result = (*m1) * (*right);
 
     auto end = chrono::steady_clock::now();
 
@@ -201,13 +197,12 @@ TEST_P(ArithmeticOperationTest, Multiply) {
 
     IMatrix* expected = new Matrix_CPU(rows, cols, value);
 
-    expect_matrix_near(result, expected);
+    expect_matrix_near(*result, *expected);
 
     cout << "Mul: "
          << chrono::duration_cast<chrono::microseconds>(end - start).count()
          << " us\n";
 
-    delete result;
     delete expected;
 }
 

@@ -1,8 +1,10 @@
 #include "../includes/Matrix_CPU.h"
 #include <array>
 #include <immintrin.h>
+#include <stdexcept>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range2d.h>
+
 #include "../../Utils/config/CASH_SIZE/CASH_SIZE.h"
 
 namespace data {
@@ -46,8 +48,8 @@ namespace data {
         }
     }
 
-    IMatrix *Matrix_CPU::transpose() {
-        Matrix_CPU *result = new Matrix_CPU(columns, rows);
+    std::unique_ptr<IMatrix> Matrix_CPU::transpose() {
+        auto result = std::make_unique<Matrix_CPU>(columns, rows);
         double *data_me = this->Data();
         double *data_result = result->Data();
         for (size_t i = 0; i < rows; i++) {
@@ -58,8 +60,8 @@ namespace data {
         return result;
     }
 
-    IMatrix *Matrix_CPU::operator+(const double scalar) {
-        Matrix_CPU *result = new Matrix_CPU(rows, columns);
+    std::unique_ptr<IMatrix> Matrix_CPU::operator+(const double scalar) {
+        auto result = std::make_unique<Matrix_CPU>(rows, columns);
         double *data_me = this->Data();
         double *data_result = result->Data();
         size_t total = rows * columns;
@@ -69,8 +71,10 @@ namespace data {
         return result;
     }
 
-    IMatrix *Matrix_CPU::operator+(IMatrix &other) {
-        Matrix_CPU *result = new Matrix_CPU(rows, columns);
+    std::unique_ptr<IMatrix> Matrix_CPU::operator+(IMatrix &other) {
+        if (rows != other.Rows() || columns != other.Columns())
+            throw std::invalid_argument("Matrix dimensions must match for addition");
+        auto result = std::make_unique<Matrix_CPU>(rows, columns);
         double *data_me = this->Data();
         double *data_other = other.Data();
         double *data_result = result->Data();
@@ -81,8 +85,8 @@ namespace data {
         return result;
     }
 
-    IMatrix *Matrix_CPU::operator*(const double scalar) {
-        Matrix_CPU *result = new Matrix_CPU(rows, columns);
+    std::unique_ptr<IMatrix> Matrix_CPU::operator*(const double scalar) {
+        auto result = std::make_unique<Matrix_CPU>(rows, columns);
         double *data_me = this->Data();
         double *data_result = result->Data();
         size_t total = rows * columns;
@@ -92,8 +96,8 @@ namespace data {
         return result;
     }
 
-    IMatrix *Matrix_CPU::operator-(IMatrix &other) {
-        Matrix_CPU *result = new Matrix_CPU(rows, columns);
+    std::unique_ptr<IMatrix> Matrix_CPU::operator-(IMatrix &other) {
+        auto result = std::make_unique<Matrix_CPU>(rows, columns);
         double *data_me = this->Data();
         double *data_other = other.Data();
         double *data_result = result->Data();
@@ -104,12 +108,14 @@ namespace data {
         return result;
     }
 
-    IMatrix *Matrix_CPU::operator*(IMatrix &other) {
+    std::unique_ptr<IMatrix> Matrix_CPU::operator*(IMatrix &other) {
         const size_t M = rows;
         const size_t K = columns;
         const size_t N = other.Columns();
+        if (K != other.Rows())
+            throw std::invalid_argument("Inner matrix dimensions must match for multiplication");
 
-        Matrix_CPU *result = new Matrix_CPU(M, N, 0);
+        auto result = std::make_unique<Matrix_CPU>(M, N , 0.0);
 
         double *left = this->Data();
         double *right = other.Data();

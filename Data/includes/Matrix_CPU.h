@@ -1,22 +1,20 @@
 #pragma once
-#include <cstddef>
-#include <iosfwd>
-
 #include "Matrix.h"
-
 
 namespace data {
 
-class Matrix_CPU : public IMatrix  {
+    class Matrix_CPU : public IMatrix {
     public:
-    ~Matrix_CPU() override = default;
-    Matrix_CPU(size_t rows, size_t cols);
-    Matrix_CPU(size_t rows, size_t cols, double value);
-    IMatrix* transpose() override;
-    IMatrix* operator+( IMatrix & other) override;
-    IMatrix* operator-( IMatrix & other) override;
-    IMatrix* operator*( IMatrix & other) override;
-    IMatrix* operator*(const double scalar) override; // No need for / it is 1/scalar
-    IMatrix* operator+(const double scalar) override; // no need for - it is -scalar :D
-};
+        Matrix_CPU(size_t rows, size_t cols);
+        Matrix_CPU(size_t rows, size_t cols, double value);
+        ~Matrix_CPU() override = default;
+
+        std::unique_ptr<IMatrix> transpose() override;
+        std::unique_ptr<IMatrix> operator+(IMatrix& other) override;
+        std::unique_ptr<IMatrix> operator-(IMatrix& other) override;
+        std::unique_ptr<IMatrix> operator*(IMatrix& other) override;
+        std::unique_ptr<IMatrix> operator*(double scalar) override;
+        std::unique_ptr<IMatrix> operator+(double scalar) override;
+    };
+
 }
