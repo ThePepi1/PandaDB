@@ -6,9 +6,7 @@ IVector::IVector(std::size_t dimension): dimension(dimension) {
     this->data = new double[dimension];
 }
 
-IVector::IVector(std::size_t dimension, double *external_data) : dimension(dimension), data(external_data) {
-
-}
+IVector::IVector(std::size_t dimension, double *external_data) : dimension(dimension), data(external_data), owner(false){}
 
 IVector::IVector(std::size_t dimension, double data):dimension(dimension) {
     this->data = new double[dimension];
@@ -17,7 +15,7 @@ IVector::IVector(std::size_t dimension, double data):dimension(dimension) {
 }
 
 IVector::~IVector() {
-    if (this->data != nullptr)
+    if (this->data != nullptr && owner)
         delete[] this->data;
 }
 
@@ -46,6 +44,7 @@ std::ostream& operator<<(std::ostream& stream, IVector& vector) {
     for (size_t i = 0; i < vector.dimension; i++) {
         stream << vector.Data()[i] << " ";
     }
+    return stream;
 }
 std::istream& operator>>(std::istream& stream, IVector& vector) {
     for (size_t i = 0; i < vector.dimension; i++) {
