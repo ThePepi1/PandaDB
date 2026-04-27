@@ -16,13 +16,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 add_library(panda_lib
-        Data/src/Matrix.cpp
-        Data/src/Matrix_CPU.cpp
+        MathCompponents/src/Matrix.cpp
+        MathCompponents/src/Matrix_CPU.cpp
         Utils/config/CASH_SIZE/CASH_SIZE.cpp
+        MathCompponents/src/IVector.cpp
+        MathCompponents/includes/IVector.h
+        MathCompponents/src/Vector_CPU.cpp
+        MathCompponents/includes/Vector_CPU.h
 )
 
 # Include headers
-target_include_directories(panda_lib PUBLIC Data/includes)
+target_include_directories(panda_lib PUBLIC MathCompponents/includes)
 
 
 include(CheckCXXCompilerFlag)
@@ -45,7 +49,8 @@ target_link_libraries(PandaDB PRIVATE panda_lib)
 
 
 add_executable(PandaDB_tests
-        Data/test/matrix_test.cpp
+        MathCompponents/test/matrix_test.cpp
+        MathCompponents/test/vector_test.cpp
 )
 
 target_link_libraries(PandaDB_tests

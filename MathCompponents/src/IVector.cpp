@@ -1,0 +1,55 @@
+#include "../includes/IVector.h"
+#include <stdexcept>
+#include <iostream>
+
+IVector::IVector(std::size_t dimension): dimension(dimension) {
+    this->data = new double[dimension];
+}
+
+IVector::IVector(std::size_t dimension, double *external_data) : dimension(dimension), data(external_data) {
+
+}
+
+IVector::IVector(std::size_t dimension, double data):dimension(dimension) {
+    this->data = new double[dimension];
+    for (size_t i = 0; i < dimension; i++)
+        this->data[i] = data;
+}
+
+IVector::~IVector() {
+    if (this->data != nullptr)
+        delete[] this->data;
+}
+
+double *IVector::Data() const {
+    return this->data;
+}
+
+size_t IVector::Dimension() const {
+    return this->dimension;
+}
+
+double &IVector::operator()(std::size_t index) const {
+    if (index >= dimension)
+        throw std::out_of_range("Index out of bounds");
+
+    return data[index];
+}
+
+double *IVector::operator[](std::size_t index) const {
+    if (index >= dimension)
+        throw std::out_of_range("Index out of bounds");
+
+    return &data[index];
+}
+std::ostream& operator<<(std::ostream& stream, IVector& vector) {
+    for (size_t i = 0; i < vector.dimension; i++) {
+        stream << vector.Data()[i] << " ";
+    }
+}
+std::istream& operator>>(std::istream& stream, IVector& vector) {
+    for (size_t i = 0; i < vector.dimension; i++) {
+        stream >> vector(i);
+    }
+    return stream;
+}
