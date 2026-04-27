@@ -12,10 +12,11 @@ public:
     std::unique_ptr<IVector> operator+(IVector& other) override;
     std::unique_ptr<IVector> operator-(IVector& other) override;
     double operator*(IVector& other) override;
+    std::unique_ptr<IVector> operator/(double scalar) override;
     std::unique_ptr<IVector> operator*(double scalar) override;
     std::unique_ptr<IVector> operator+(double scalar) override;
     std::unique_ptr<IVector> operator^(IVector& other) override;
-    double norm() const override;
-    std::unique_ptr<IVector> normalize() const override;
+    double norm()  override;
+    std::unique_ptr<IVector> normalize() override;
 };
 

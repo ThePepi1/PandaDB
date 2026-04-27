@@ -122,6 +122,19 @@ TEST_P(ArithmeticOperationTestVector, ScalarMultiply) {
             << chrono::duration_cast<chrono::microseconds>(end - start).count()
             << " us\n";
 }
+TEST_P(ArithmeticOperationTestVector, ScalarDivision) {
+    auto p = GetParam();
+    if (std::abs(p.scalar) < 1e-10) {
+        GTEST_SKIP() << "Skipping division by zero case";
+    }
+    auto start = chrono::steady_clock::now();
+    auto result = (*v1) / p.scalar;
+    auto end = chrono::steady_clock::now();
+    Vector_CPU expected(p.dimension, p.a / p.scalar);
+    expect_vector_near(*result, expected);
+    cout << "ScalarDiv [dim=" << p.dimension << "]: "
+    << chrono::duration_cast<chrono::microseconds>(end - start).count() << " us\n";
+}
 
 TEST_P(ArithmeticOperationTestVector, DotProduct) {
     auto p = GetParam();
@@ -150,6 +163,7 @@ INSTANTIATE_TEST_SUITE_P(
     ArithmeticTests,
     ArithmeticOperationTestVector,
     ::testing::Values(
+        VectorParams{1 << 27 , 4.0, 5.0, 1.0}, // very large —  SIMD path
         VectorParams{1 << 20, 1.0, 2.0, 3.0}, // large — SIMD path
         VectorParams{1000, 2.0, 3.0, 0.5},
         VectorParams{16, 1.5, 2.5, 2.0}, // small — boundary
@@ -253,7 +267,6 @@ TEST_P(ArithmeticOperationTestVector, Norm) {
     double result = v1->norm();
     auto end = chrono::steady_clock::now();
 
-    // all elements = a, so norm = |a| * sqrt(dimension)
     double expected = std::abs(p.a) * std::sqrt(static_cast<double>(p.dimension));
     EXPECT_NEAR(result, expected, 1e-6);
 
@@ -268,7 +281,13 @@ TEST_P(ArithmeticOperationTestVector, NormIsNonNegative) {
 }
 
 TEST_P(ArithmeticOperationTestVector, NormalizeResultHasUnitNorm) {
+    auto p = GetParam();
+    auto start = chrono::steady_clock::now();
     auto result = v1->normalize();
+    auto end = chrono::steady_clock::now();
+    cout << "Normalize [dim=" << p.dimension << "]: "
+        << chrono::duration_cast<chrono::microseconds>(end - start).count()
+        << " us\n";
     EXPECT_NEAR(result->norm(), 1.0, 1e-9);
 }
 
@@ -285,4 +304,8 @@ TEST_P(ArithmeticOperationTestVector, NormalizeDirectionPreserved) {
 TEST(NormalizeEdgeTest, ZeroVectorThrows) {
     Vector_CPU v(4, 0.0);
     EXPECT_THROW(v.normalize(), std::runtime_error);
+}
+TEST(ScalarDivisionEdgeTest, DivisionByZeroThrows) {
+    Vector_CPU v(10, 1.0);
+    EXPECT_THROW(v / 0.0, std::runtime_error);
 }
