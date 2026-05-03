@@ -5,6 +5,8 @@
 #include <iosfwd>
 
 class IVector {
+private:
+    bool owner = true;
 protected:
     std::size_t dimension;
     double* data;
