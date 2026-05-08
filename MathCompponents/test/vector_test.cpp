@@ -3,26 +3,27 @@
 #include <iostream>
 #include <cmath>
 
-#include "../includes/Vector_CPU.h"
+#include "../includes/Vector/Vector_CPU.h"
+#include "Vector/FactoryVector.h"
+#include "Vector/FactoryVectorCPU.h"
+#include "Vector/FactoryVector.h"
 
 using namespace std;
+using namespace data;
 
 static void expect_vector_near(IVector &A, IVector &B, double tol = 1e-9) {
     EXPECT_EQ(A.Dimension(), B.Dimension());
     for (size_t i = 0; i < A.Dimension(); i++)
         EXPECT_NEAR(A(i), B(i), tol) << " mismatch at index " << i;
 }
+static FactoryVector *factory_vector = new FactoryVectorCPU();
 
 class AccessTestVector : public ::testing::Test {
 protected:
-    IVector *v;
+    unique_ptr<IVector> v;
 
     void SetUp() override {
-        v = new Vector_CPU(8);
-    }
-
-    void TearDown() override {
-        delete v;
+        v = factory_vector->createVector(8);
     }
 };
 
@@ -49,17 +50,12 @@ struct VectorParams {
 
 class ArithmeticOperationTestVector : public ::testing::TestWithParam<VectorParams> {
 protected:
-    IVector *v1, *v2;
+    std::unique_ptr<IVector> v1, v2;
 
     void SetUp() override {
         auto p = GetParam();
-        v1 = new Vector_CPU(p.dimension, p.a);
-        v2 = new Vector_CPU(p.dimension, p.b);
-    }
-
-    void TearDown() override {
-        delete v1;
-        delete v2;
+        v1 = factory_vector->createVector(p.dimension, p.a);
+        v2 = factory_vector->createVector(p.dimension, p.b);
     }
 };
 
@@ -70,8 +66,8 @@ TEST_P(ArithmeticOperationTestVector, VectorAddition) {
     auto result = (*v1) + (*v2);
     auto end = chrono::steady_clock::now();
 
-    Vector_CPU expected(p.dimension, p.a + p.b);
-    expect_vector_near(*result, expected);
+    std::unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a + p.b);
+    expect_vector_near(*result, *expected);
 
     cout << "VecAdd [dim=" << p.dimension << "]: "
             << chrono::duration_cast<chrono::microseconds>(end - start).count()
@@ -85,8 +81,8 @@ TEST_P(ArithmeticOperationTestVector, VectorSubtraction) {
     auto result = (*v1) - (*v2);
     auto end = chrono::steady_clock::now();
 
-    Vector_CPU expected(p.dimension, p.a - p.b);
-    expect_vector_near(*result, expected);
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a - p.b);
+    expect_vector_near(*result, *expected);
 
     cout << "VecSub [dim=" << p.dimension << "]: "
             << chrono::duration_cast<chrono::microseconds>(end - start).count()
@@ -100,8 +96,8 @@ TEST_P(ArithmeticOperationTestVector, ScalarAddition) {
     auto result = (*v1) + p.scalar;
     auto end = chrono::steady_clock::now();
 
-    Vector_CPU expected(p.dimension, p.a + p.scalar);
-    expect_vector_near(*result, expected);
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a + p.scalar);
+    expect_vector_near(*result, *expected);
 
     cout << "ScalarAdd [dim=" << p.dimension << "]: "
             << chrono::duration_cast<chrono::microseconds>(end - start).count()
@@ -115,8 +111,8 @@ TEST_P(ArithmeticOperationTestVector, ScalarMultiply) {
     auto result = (*v1) * p.scalar;
     auto end = chrono::steady_clock::now();
 
-    Vector_CPU expected(p.dimension, p.a * p.scalar);
-    expect_vector_near(*result, expected);
+    unique_ptr<IVector> expected= factory_vector->createVector(p.dimension, p.a * p.scalar);
+    expect_vector_near(*result, *expected);
 
     cout << "ScalarMul [dim=" << p.dimension << "]: "
             << chrono::duration_cast<chrono::microseconds>(end - start).count()
@@ -130,8 +126,8 @@ TEST_P(ArithmeticOperationTestVector, ScalarDivision) {
     auto start = chrono::steady_clock::now();
     auto result = (*v1) / p.scalar;
     auto end = chrono::steady_clock::now();
-    Vector_CPU expected(p.dimension, p.a / p.scalar);
-    expect_vector_near(*result, expected);
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a / p.scalar);
+    expect_vector_near(*result, *expected);
     cout << "ScalarDiv [dim=" << p.dimension << "]: "
     << chrono::duration_cast<chrono::microseconds>(end - start).count() << " us\n";
 }
@@ -153,10 +149,10 @@ TEST_P(ArithmeticOperationTestVector, DotProduct) {
 }
 
 TEST_P(ArithmeticOperationTestVector, DimensionMismatchThrows) {
-    Vector_CPU other(GetParam().dimension + 1, 1.0);
-    EXPECT_THROW((*v1) + other, std::invalid_argument);
-    EXPECT_THROW((*v1) - other, std::invalid_argument);
-    EXPECT_THROW((*v1) * other, std::invalid_argument);
+    unique_ptr<IVector> other= factory_vector->createVector(GetParam().dimension + 1, 1.0);
+    EXPECT_THROW((*v1) + *other, std::invalid_argument);
+    EXPECT_THROW((*v1) - *other, std::invalid_argument);
+    EXPECT_THROW((*v1) * *other, std::invalid_argument);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -175,104 +171,67 @@ INSTANTIATE_TEST_SUITE_P(
 
 class CrossProductTestVector : public ::testing::Test {
 protected:
-    IVector *v1, *v2;
-
+    std::unique_ptr<IVector> v1, v2;
     void SetUp() override {
-        v1 = new Vector_CPU(3);
-        v2 = new Vector_CPU(3);
-    }
-
-    void TearDown() override {
-        delete v1;
-        delete v2;
+        v1 = factory_vector->createVector(3);
+        v2 = factory_vector->createVector(3);
     }
 };
 
 TEST_F(CrossProductTestVector, BasisVectors_X_cross_Y_equals_Z) {
-    (*v1)(0) = 1;
-    (*v1)(1) = 0;
-    (*v1)(2) = 0; // X
-    (*v2)(0) = 0;
-    (*v2)(1) = 1;
-    (*v2)(2) = 0; // Y
-
+    (*v1)(0) = 1; (*v1)(1) = 0; (*v1)(2) = 0; // X
+    (*v2)(0) = 0; (*v2)(1) = 1; (*v2)(2) = 0; // Y
     auto result = (*v1) ^ (*v2);
-
-    EXPECT_NEAR((*result)(0), 0.0, 1e-9); // Z
+    EXPECT_NEAR((*result)(0), 0.0, 1e-9);
     EXPECT_NEAR((*result)(1), 0.0, 1e-9);
     EXPECT_NEAR((*result)(2), 1.0, 1e-9);
 }
 
 TEST_F(CrossProductTestVector, AntiCommutativity) {
-    (*v1)(0) = 1;
-    (*v1)(1) = 2;
-    (*v1)(2) = 3;
-    (*v2)(0) = 4;
-    (*v2)(1) = 5;
-    (*v2)(2) = 6;
-
+    (*v1)(0) = 1; (*v1)(1) = 2; (*v1)(2) = 3;
+    (*v2)(0) = 4; (*v2)(1) = 5; (*v2)(2) = 6;
     auto ab = (*v1) ^ (*v2);
     auto ba = (*v2) ^ (*v1);
-
     for (size_t i = 0; i < 3; i++)
         EXPECT_NEAR((*ab)(i), -(*ba)(i), 1e-9) << " at index " << i;
 }
 
 TEST_F(CrossProductTestVector, ParallelVectorsGiveZero) {
-    (*v1)(0) = 2;
-    (*v1)(1) = 4;
-    (*v1)(2) = 6;
-    (*v2)(0) = 1;
-    (*v2)(1) = 2;
-    (*v2)(2) = 3; // parallel to v1
-
+    (*v1)(0) = 2; (*v1)(1) = 4; (*v1)(2) = 6;
+    (*v2)(0) = 1; (*v2)(1) = 2; (*v2)(2) = 3; // parallel to v1
     auto result = (*v1) ^ (*v2);
-
     for (size_t i = 0; i < 3; i++)
         EXPECT_NEAR((*result)(i), 0.0, 1e-9) << " at index " << i;
 }
 
 TEST_F(CrossProductTestVector, ResultIsPerpendicularToBothInputs) {
-    (*v1)(0) = 1;
-    (*v1)(1) = 2;
-    (*v1)(2) = 3;
-    (*v2)(0) = 4;
-    (*v2)(1) = 5;
-    (*v2)(2) = 6;
-
+    (*v1)(0) = 1; (*v1)(1) = 2; (*v1)(2) = 3;
+    (*v2)(0) = 4; (*v2)(1) = 5; (*v2)(2) = 6;
     auto result = (*v1) ^ (*v2);
-
-    // dot(result, v1) and dot(result, v2) must both be 0
-    double dot1 = (*result) * (*v1);
-    double dot2 = (*result) * (*v2);
-
-    EXPECT_NEAR(dot1, 0.0, 1e-9);
-    EXPECT_NEAR(dot2, 0.0, 1e-9);
+    EXPECT_NEAR((*result) * (*v1), 0.0, 1e-9);
+    EXPECT_NEAR((*result) * (*v2), 0.0, 1e-9);
 }
 
 TEST_F(CrossProductTestVector, NonThreeDimensionalThrows) {
-    Vector_CPU a(2, 1.0);
-    Vector_CPU b(2, 1.0);
-    EXPECT_THROW(a ^ b, std::invalid_argument);
+    auto a = factory_vector->createVector(2, 1.0);
+    auto b = factory_vector->createVector(2, 1.0);
+    EXPECT_THROW((*a) ^ (*b), std::invalid_argument);
 
-    Vector_CPU c(4, 1.0);
-    Vector_CPU d(4, 1.0);
-    EXPECT_THROW(c ^ d, std::invalid_argument);
+    auto c = factory_vector->createVector(4, 1.0);
+    auto d = factory_vector->createVector(4, 1.0);
+    EXPECT_THROW((*c) ^ (*d), std::invalid_argument);
 }
 
 TEST_P(ArithmeticOperationTestVector, Norm) {
     auto p = GetParam();
-
     auto start = chrono::steady_clock::now();
     double result = v1->norm();
     auto end = chrono::steady_clock::now();
-
     double expected = std::abs(p.a) * std::sqrt(static_cast<double>(p.dimension));
     EXPECT_NEAR(result, expected, 1e-6);
-
     cout << "Norm [dim=" << p.dimension << "]: "
-            << chrono::duration_cast<chrono::microseconds>(end - start).count()
-            << " us\n";
+         << chrono::duration_cast<chrono::microseconds>(end - start).count()
+         << " us\n";
 }
 
 TEST_P(ArithmeticOperationTestVector, NormIsNonNegative) {
@@ -286,26 +245,25 @@ TEST_P(ArithmeticOperationTestVector, NormalizeResultHasUnitNorm) {
     auto result = v1->normalize();
     auto end = chrono::steady_clock::now();
     cout << "Normalize [dim=" << p.dimension << "]: "
-        << chrono::duration_cast<chrono::microseconds>(end - start).count()
-        << " us\n";
+         << chrono::duration_cast<chrono::microseconds>(end - start).count()
+         << " us\n";
     EXPECT_NEAR(result->norm(), 1.0, 1e-9);
 }
 
 TEST_P(ArithmeticOperationTestVector, NormalizeDirectionPreserved) {
-    // normalize(v) * norm(v) should recover original v
     double n = v1->norm();
     auto result = v1->normalize();
     auto scaled = (*result) * n;
-
     for (size_t i = 0; i < v1->Dimension(); i++)
         EXPECT_NEAR((*scaled)(i), (*v1)(i), 1e-6) << " at index " << i;
 }
 
 TEST(NormalizeEdgeTest, ZeroVectorThrows) {
-    Vector_CPU v(4, 0.0);
-    EXPECT_THROW(v.normalize(), std::runtime_error);
+    auto v = factory_vector->createVector(4, 0.0);
+    EXPECT_THROW(v->normalize(), std::runtime_error);
 }
+
 TEST(ScalarDivisionEdgeTest, DivisionByZeroThrows) {
-    Vector_CPU v(10, 1.0);
-    EXPECT_THROW(v / 0.0, std::runtime_error);
+    auto v = factory_vector->createVector(10, 1.0);
+    EXPECT_THROW((*v) / 0.0, std::runtime_error);
 }

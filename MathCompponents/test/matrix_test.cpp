@@ -2,8 +2,8 @@
 #include <chrono>
 #include <iostream>
 
-#include "../includes/Matrix.h"
-#include "../includes/Matrix_CPU.h"
+#include "../includes/Matrix/Matrix.h"
+#include "../includes/Matrix/Matrix_CPU.h"
 
 using namespace std;
 using namespace data;
