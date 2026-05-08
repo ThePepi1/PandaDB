@@ -22,6 +22,14 @@ add_library(panda_lib
         MathCompponents/includes/Vector/FactoryVector.h
         MathCompponents/src/Vector/FactoryVectorCPU.cpp
         MathCompponents/includes/Vector/FactoryVectorCPU.h
+        Metrics/src/IMetrics.cpp
+        Metrics/includes/IMetrics.h
+        Metrics/src/MetricFactory.cpp
+        Metrics/includes/MetricFactory.h
+        Metrics/src/EuclideMetrics.cpp
+        Metrics/includes/EuclideMetrics.h
+        Metrics/src/register.cpp
+        Metrics/includes/register.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -43,6 +51,7 @@ target_link_libraries(PandaDB PRIVATE panda_lib)
 add_executable(PandaDB_tests
         MathCompponents/test/matrix_test.cpp
         MathCompponents/test/vector_test.cpp
+        Metrics/test/metrics_test.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE
