@@ -1,11 +1,11 @@
-#include "../includes/Matrix_CPU.h"
+#include "../../includes/Matrix/Matrix_CPU.h"
 #include <array>
 #include <immintrin.h>
 #include <stdexcept>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range2d.h>
 
-#include "../../Utils/config/CASH_SIZE/CASH_SIZE.h"
+#include "../../../Utils/config/CASH_SIZE/CASH_SIZE.h"
 
 namespace data {
     static void multiply_block(double *output, double *left, double *right, size_t N, size_t K) {
