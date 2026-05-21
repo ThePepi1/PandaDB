@@ -57,11 +57,15 @@ TEST_P(MetricAccuracyTest, Distance) {
          << " us\n";
 }
 TEST_P(MetricAccuracyTest, SameVectors) {
+    int expected = 0;
+    if (GetParam().metric_name == "cosine_similarity") {
+        expected = 1;
+    }
     auto p = GetParam();
     auto start    = chrono::steady_clock::now();
     double result = (*metric)(v1.get(), v1.get());
     auto end      = chrono::steady_clock::now();
-    EXPECT_NEAR(result, 0, p.tol) << "Distance between identical vectors should be zero";
+    EXPECT_NEAR(result, expected, p.tol) << "Distance between identical vectors should be zero";
 }
 TEST_P(MetricAccuracyTest, DimensionMismatchThrows) {
     auto p = GetParam();
@@ -83,7 +87,14 @@ INSTANTIATE_TEST_SUITE_P(
         MetricParams{"euclide", 1<<20,    1.0,   2.0,  1024.0,                    1e-4},  // sqrt(2^20)=1024
         MetricParams{"euclide", 1<<27,    4.0,   5.0,  11585.2375,                   1e-3},  // sqrt(2^27)=32768
         MetricParams{"euclide",      7,   3.0,   7.0,  10.583005244258363,        1e-6},  // odd dim
-        MetricParams{"euclide",      3,   0.0,   0.0,   0.0,                      1e-9}   // identical -> 0
+        MetricParams{"euclide",      3,   0.0,   0.0,   0.0,                      1e-9},
+        MetricParams{"cosine_similarity",      1,   2.0,   5.0,   1.0,                      1e-9},
+        MetricParams{"cosine_similarity",     16,   1.5,   2.5,   1.0,                      1e-9},
+        MetricParams{"cosine_similarity",    100,   3.0,   7.0,   1.0,                      1e-6},
+        MetricParams{"cosine_similarity",   1000,   1.0,   4.0,   1.0,                      1e-6},
+        MetricParams{"cosine_similarity", 1<<20,   1.0,   2.0,   1.0,                      1e-4},
+        MetricParams{"cosine_similarity", 1<<27,   4.0,   5.0,   1.0,                      1e-3},
+        MetricParams{"cosine_similarity",      7,   3.0,   7.0,   1.0,                      1e-6}
     ),
     [](const testing::TestParamInfo<MetricParams>& info) {
         auto& p = info.param;

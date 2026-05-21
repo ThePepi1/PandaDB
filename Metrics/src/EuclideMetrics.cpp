@@ -6,6 +6,8 @@
 
 #include <cmath>
 #include <math.h>
+#include <immintrin.h>
+
 
 #include "../includes/MetricFactory.h"
 
@@ -20,30 +22,27 @@ namespace metrics {
         if (first->Dimension() != second->Dimension()) {
             throw std::invalid_argument("Vectors must be of the same size");
         }
-        double sum = 0.0;
-
-        for (size_t i = 0; i < first->Dimension(); i++) {
-            double diff = (*first)(i) - (*second)(i);
-            sum += diff * diff;
+        __m256d sum = _mm256_setzero_pd();
+        double* firstData = first->Data();
+        double* secondData = second->Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        size_t i = 0;
+        for (; i + avx_double < first->Dimension(); i+= avx_double) {
+            __m256d div = _mm256_sub_pd(_mm256_loadu_pd(firstData), _mm256_loadu_pd(secondData));
+            sum = _mm256_add_pd(sum, _mm256_mul_pd(div, div));
+            firstData += avx_double;
+            secondData += avx_double;
         }
-        return sqrt(sum);
+        __m128d lo     = _mm256_castpd256_pd128(sum);
+        __m128d hi     = _mm256_extractf128_pd(sum,1);
+        __m128d sum128 = _mm_add_pd(lo, hi);
+        __m128d tmp    = _mm_shuffle_pd(sum128, sum128, 1);
+        double  result = _mm_cvtsd_f64(_mm_add_pd(sum128, tmp));
+        for (; i < first->Dimension(); ++i, ++firstData, ++secondData) {
+            double diff = (*firstData) - (*secondData);
+            result += diff * diff;
+        }
+        return sqrt(result);
     }
-
-}
-namespace {
-
-    struct EuclideMetricRegister {
-        EuclideMetricRegister() {
-            metrics::MetricFactory::instance().register_metric(
-                "euclide",
-                [] {
-                    return std::make_unique<metrics::EuclideMetrics>();
-                }
-            );
-        }
-    };
-
-    [[maybe_unused]]
-    static EuclideMetricRegister reg_euclide;
 
 }

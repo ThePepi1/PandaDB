@@ -9,8 +9,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-find_package(OpenCL REQUIRED)
-
 add_library(panda_lib
         MathCompponents/src/Matix/Matrix.cpp
         MathCompponents/src/Matix/Matrix_CPU.cpp
@@ -30,6 +28,10 @@ add_library(panda_lib
         Metrics/includes/EuclideMetrics.h
         Metrics/src/register.cpp
         Metrics/includes/register.h
+        Metrics/src/CosineSimilarityMetric.cpp
+        Metrics/includes/CosineSimilarityMetric.h
+        Metrics/src/DotMetric.cpp
+        Metrics/includes/DotMetric.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -42,8 +44,7 @@ if(HAS_AVX2 AND HAS_FMA)
 endif()
 
 find_package(TBB REQUIRED)
-target_link_libraries(panda_lib PUBLIC TBB::tbb OpenCL::OpenCL)
-target_compile_definitions(panda_lib PUBLIC USE_OPENCL)
+target_link_libraries(panda_lib PUBLIC TBB::tbb)
 
 add_executable(PandaDB main.cpp)
 target_link_libraries(PandaDB PRIVATE panda_lib)
