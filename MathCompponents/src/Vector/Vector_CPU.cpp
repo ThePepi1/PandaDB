@@ -117,7 +117,6 @@ namespace data {
             result += (*thisData) * (*otherData);
 
         return result;
-
     }
 
     std::unique_ptr<IVector> Vector_CPU::operator^(IVector &other) {
