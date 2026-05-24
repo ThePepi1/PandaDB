@@ -32,6 +32,8 @@ add_library(panda_lib
         Metrics/includes/CosineSimilarityMetric.h
         Metrics/src/DotMetric.cpp
         Metrics/includes/DotMetric.h
+        Data/FlatIndex/src/FlatenIndex.cpp
+        Data/FlatIndex/includes/FlatenIndex.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -53,6 +55,7 @@ add_executable(PandaDB_tests
         MathCompponents/test/matrix_test.cpp
         MathCompponents/test/vector_test.cpp
         Metrics/test/metrics_test.cpp
+        Data/FlatIndex/test/FlatIndex_test.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE
