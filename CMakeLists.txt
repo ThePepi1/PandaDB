@@ -42,7 +42,11 @@ include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2)
 check_cxx_compiler_flag("-mfma" HAS_FMA)
 if(HAS_AVX2 AND HAS_FMA)
-    target_compile_options(panda_lib PRIVATE -mavx2 -mfma)
+    target_compile_options(panda_lib PRIVATE
+            -O3
+            -mavx2
+            -mfma
+    )
 endif()
 
 find_package(TBB REQUIRED)
