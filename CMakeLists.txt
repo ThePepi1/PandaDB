@@ -32,6 +32,8 @@ add_library(panda_lib
         Metrics/includes/CosineSimilarityMetric.h
         Metrics/src/DotMetric.cpp
         Metrics/includes/DotMetric.h
+        Data/FlatIndex/src/FlatenIndex.cpp
+        Data/FlatIndex/includes/FlatenIndex.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -40,7 +42,11 @@ include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2)
 check_cxx_compiler_flag("-mfma" HAS_FMA)
 if(HAS_AVX2 AND HAS_FMA)
-    target_compile_options(panda_lib PRIVATE -mavx2 -mfma)
+    target_compile_options(panda_lib PRIVATE
+            -O3
+            -mavx2
+            -mfma
+    )
 endif()
 
 find_package(TBB REQUIRED)
@@ -53,6 +59,7 @@ add_executable(PandaDB_tests
         MathCompponents/test/matrix_test.cpp
         MathCompponents/test/vector_test.cpp
         Metrics/test/metrics_test.cpp
+        Data/FlatIndex/test/FlatIndex_test.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE
