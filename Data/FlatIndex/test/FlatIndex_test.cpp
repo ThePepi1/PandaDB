@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <memory>
 
-using Data::FlatenIndex;
+using DataStructures::FlatenIndex;
 using data::FactoryVectorCPU;
 using data::IVector;
 
