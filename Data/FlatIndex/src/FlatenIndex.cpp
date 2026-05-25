@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <new>
 
-namespace Data {
+namespace DataStructures {
     FlatenIndex::FlatenIndex(std::size_t num_elements, std::size_t vector_dimension, data::FactoryVector *factory_vector):num_elements(num_elements),vector_dimension(vector_dimension),factory_vector(factory_vector) {
         dimension_padding = (vector_dimension + 3) & ~3; // Align to 4
         std::size_t total_bytes = num_elements * dimension_padding * sizeof(double);
@@ -23,6 +23,11 @@ namespace Data {
     }
     std::size_t FlatenIndex::elements() const {
         return num_elements;
+    }
+    double* FlatenIndex::row(std::size_t index) {
+        if (index >= num_elements)
+            throw std::out_of_range("Index out of range");
+        return data + index * dimension_padding;
     }
 
     std::unique_ptr<data::IVector> FlatenIndex::operator[](std::size_t index) {

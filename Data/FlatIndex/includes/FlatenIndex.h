@@ -5,7 +5,7 @@
 #include "Vector/FactoryVector.h"
 #include "Vector/IVector.h"
 
-namespace Data {
+namespace DataStructures {
     class FlatenIndex {
         double * data;
         std::size_t num_elements;
@@ -19,6 +19,8 @@ namespace Data {
          std::size_t padding() const;
          std::size_t dimension() const;
          std::size_t elements() const;
+         double * row(std::size_t index);
+
     };
 }
 
