@@ -36,6 +36,8 @@ add_library(panda_lib
         Data/FlatIndex/includes/FlatenIndex.h
         Algoritams/src/Sercher.cpp
         Algoritams/includes/Sercher.h
+        Algoritams/includes/neighbor.h
+        Algoritams/src/neighbor.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

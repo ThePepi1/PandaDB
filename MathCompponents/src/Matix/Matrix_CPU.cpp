@@ -11,7 +11,7 @@ namespace data {
     static void multiply_block(double *output, double *left, double *right, size_t N, size_t K) {
         constexpr int avx_double = 256 / (sizeof(double) * 8);
         constexpr int output_reg_count = {config::ROWS_PER_REGISTER * config::COLS_PER_REGISTER / avx_double};
-        std::array<__m256d, output_reg_count> result;
+        __m256d result[output_reg_count];
         for (int i = 0; i < output_reg_count; ++i) {
             result[i] = _mm256_setzero_pd();
         }
