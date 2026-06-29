@@ -53,4 +53,10 @@ namespace data {
         }
         return stream;
     }
+    bool IVector::Owner() const {
+        return this->owner;
+    }
+    void IVector::Disown() {
+        this->owner = false;
+    }
 }

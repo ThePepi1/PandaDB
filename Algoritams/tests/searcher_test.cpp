@@ -21,7 +21,6 @@ using namespace std;
 using namespace data;
 using namespace metrics;
 
-// ─── Params ──────────────────────────────────────────────────────────────────
 
 struct SearchParams {
     string   label;
@@ -31,7 +30,6 @@ struct SearchParams {
     uint32_t seed;
 };
 
-// ─── Fixture ─────────────────────────────────────────────────────────────────
 
 class SearchTest : public ::testing::TestWithParam<SearchParams> {
 protected:
@@ -76,7 +74,7 @@ protected:
                                       all_distances.begin() + p.k);
     }
 
-    vector<double> sorted_distances(algorithm::neighbor* result, size_t k) {
+    vector<double> sorted_distances(data::neighbor* result, size_t k) {
         vector<double> out(k);
         for (size_t i = 0; i < k; i++)
             out[i] = result[i].getValue();
@@ -85,18 +83,17 @@ protected:
     }
 };
 
-// ─── Serial tests ────────────────────────────────────────────────────────────
 
 TEST_P(SearchTest, SerialReturnsKResults) {
     auto p = GetParam();
-    algorithm::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
     ASSERT_NE(result, nullptr);
     delete[] result;
 }
 
 TEST_P(SearchTest, SerialCorrectness) {
     auto p = GetParam();
-    algorithm::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
 
     auto got = sorted_distances(result, p.k);
     for (size_t i = 0; i < p.k; i++) {
@@ -111,7 +108,7 @@ TEST_P(SearchTest, SerialCorrectness) {
 TEST_P(SearchTest, SerialPerformance) {
     auto p = GetParam();
     auto t0 = chrono::steady_clock::now();
-    algorithm::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::Search(*index, *query, p.k, *metric);
     auto ms = chrono::duration_cast<chrono::milliseconds>(
                   chrono::steady_clock::now() - t0).count();
 
@@ -126,14 +123,14 @@ TEST_P(SearchTest, SerialPerformance) {
 
 TEST_P(SearchTest, ParallelReturnsKResults) {
     auto p = GetParam();
-    algorithm::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
     ASSERT_NE(result, nullptr);
     delete[] result;
 }
 
 TEST_P(SearchTest, ParallelCorrectness) {
     auto p = GetParam();
-    algorithm::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
 
     auto got = sorted_distances(result, p.k);
     for (size_t i = 0; i < p.k; i++) {
@@ -148,7 +145,7 @@ TEST_P(SearchTest, ParallelCorrectness) {
 TEST_P(SearchTest, ParallelPerformance) {
     auto p = GetParam();
     auto t0 = chrono::steady_clock::now();
-    algorithm::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
+    data::neighbor* result = algorithm::SearchParrallel(*index, *query, p.k, *metric);
     auto ms = chrono::duration_cast<chrono::milliseconds>(
                   chrono::steady_clock::now() - t0).count();
 
@@ -163,8 +160,8 @@ TEST_P(SearchTest, ParallelPerformance) {
 
 TEST_P(SearchTest, SerialAndParallelAgree) {
     auto p = GetParam();
-    algorithm::neighbor* serial   = algorithm::Search(*index, *query, p.k, *metric);
-    algorithm::neighbor* parallel = algorithm::SearchParrallel(*index, *query, p.k, *metric);
+    data::neighbor* serial   = algorithm::Search(*index, *query, p.k, *metric);
+    data::neighbor* parallel = algorithm::SearchParrallel(*index, *query, p.k, *metric);
 
     auto sd = sorted_distances(serial,   p.k);
     auto pd = sorted_distances(parallel, p.k);
@@ -182,12 +179,12 @@ TEST_P(SearchTest, ParallelFasterThanSerial) {
     auto p = GetParam();
 
     auto s0 = chrono::steady_clock::now();
-    algorithm::neighbor* sr = algorithm::Search(*index, *query, p.k, *metric);
+    data::neighbor* sr = algorithm::Search(*index, *query, p.k, *metric);
     auto serial_ms = chrono::duration_cast<chrono::milliseconds>(
                          chrono::steady_clock::now() - s0).count();
 
     auto p0 = chrono::steady_clock::now();
-    algorithm::neighbor* pr = algorithm::SearchParrallel(*index, *query, p.k, *metric);
+    data::neighbor* pr = algorithm::SearchParrallel(*index, *query, p.k, *metric);
     auto parallel_ms = chrono::duration_cast<chrono::milliseconds>(
                            chrono::steady_clock::now() - p0).count();
 
@@ -212,7 +209,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
         SearchParams{"smoke",   10000, 1000, 10, 42},
         SearchParams{"small",     100,   16,  5, 42},
-        SearchParams{"large",  100000,  128, 20, 99}
+        SearchParams{"large",  100000,  128, 20, 99},
+        SearchParams{"huge", 1000000,  256, 50, 123}
     ),
     [](const testing::TestParamInfo<SearchParams>& info) {
         return info.param.label;
