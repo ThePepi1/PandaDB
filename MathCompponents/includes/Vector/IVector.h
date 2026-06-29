@@ -31,7 +31,7 @@ namespace data {
         double* Data() const;
         size_t Dimension() const;
         bool Owner() const;
-        void disown();
+        void Disown();
         friend std::ostream& operator<<(std::ostream& stream, IVector& matrix);
         friend std::istream& operator>>(std::istream& stream, IVector& matrix);
 

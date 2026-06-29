@@ -56,7 +56,7 @@ namespace data {
     bool IVector::Owner() const {
         return this->owner;
     }
-    void IVector::disown() {
+    void IVector::Disown() {
         this->owner = false;
     }
 }

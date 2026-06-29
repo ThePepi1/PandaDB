@@ -8,7 +8,7 @@ namespace data {
         if (vectorData == nullptr) {
             throw std::invalid_argument("Vector data cannot be null");
         }
-        vector->disown();  // Disown the vector to avoid double deletion
+        vector->Disown();  // Disown the vector to avoid double deletion
     }
     neighbor::~neighbor() {
         if (memoryOwner && vectorData) {
