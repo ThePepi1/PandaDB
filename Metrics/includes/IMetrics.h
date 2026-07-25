@@ -5,7 +5,7 @@ namespace metrics {
     class IMetrics {
         public:
         virtual ~IMetrics() = default;
-        virtual double operator()(data::IVector *first, data::IVector *second) const = 0;
+        virtual double operator()(const data::IVector &first, const data::IVector &second) const = 0;
         virtual std::string_view name() const = 0;
 
     };

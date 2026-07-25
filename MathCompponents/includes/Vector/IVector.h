@@ -18,15 +18,15 @@ namespace data {
 
         double* operator[](std::size_t index) const;
         double& operator()(std::size_t index) const;
-        virtual std::unique_ptr<IVector> operator+(IVector& other) = 0;
-        virtual std::unique_ptr<IVector> operator-(IVector& other) = 0;
-        virtual double operator*(IVector& other) = 0;
-        virtual std::unique_ptr<IVector> operator/(double scalar) = 0;
-        virtual std::unique_ptr<IVector> operator*(double scalar) = 0;
-        virtual std::unique_ptr<IVector> operator+(double scalar) = 0;
-        virtual std::unique_ptr<IVector> operator^(IVector& other) = 0;
-        virtual double norm() = 0;
-        virtual std::unique_ptr<IVector> normalize() = 0;
+        virtual std::unique_ptr<IVector> operator+(const IVector& other)const = 0;
+        virtual std::unique_ptr<IVector> operator-(const IVector& other) const = 0;
+        virtual double operator*(const IVector& other) const = 0;
+        virtual std::unique_ptr<IVector> operator/(double scalar)const = 0;
+        virtual std::unique_ptr<IVector> operator*(double scalar) const = 0;
+        virtual std::unique_ptr<IVector> operator+(double scalar)const = 0;
+        virtual std::unique_ptr<IVector> operator^(const IVector& other)const = 0;
+        virtual double norm() const = 0;
+        virtual std::unique_ptr<IVector> normalize() const = 0;
 
         double* Data() const;
         size_t Dimension() const;

@@ -8,9 +8,8 @@ namespace metrics {
     std::string_view CosineSimilarityMetric::name() const {
         return "cosine_similarity";
     }
-    double CosineSimilarityMetric::operator()(data::IVector *first, data::IVector *second) const {
-        return ((*first) * (*second)) / ((first->norm()) * (second->norm()));
-
+    double CosineSimilarityMetric::operator()(const data::IVector &first, const data::IVector &second) const {
+        return (first * second )/ ((first.norm()) * (second.norm()));
     }
 
 }

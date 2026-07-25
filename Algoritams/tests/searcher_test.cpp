@@ -67,7 +67,7 @@ protected:
         vector<double> all_distances(p.num_elements);
         for (size_t i = 0; i < p.num_elements; i++) {
             auto elem = (*index)[i];
-            all_distances[i] = (*metric)(elem.get(), query.get());
+            all_distances[i] = (*metric)(*elem, *query);
         }
         sort(all_distances.begin(), all_distances.end());
         ground_truth_distances.assign(all_distances.begin(),
