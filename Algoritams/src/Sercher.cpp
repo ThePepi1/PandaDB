@@ -10,7 +10,7 @@ namespace algorithm {
         data::neighbor* neighborhood = new data::neighbor[k];
         for (size_t i = 0; i < num_elements; i++) {
             std::unique_ptr<data::IVector> element = index[i];
-            double distance = metric(element.get(), &query);
+            double distance = metric(*element, query);
             data::neighbor new_neighbor(i, distance, element.get());
             for (size_t j = 0; j < k; j++) {
                 if (new_neighbor.getValue() < neighborhood[j].getValue()) {
@@ -34,7 +34,7 @@ namespace algorithm {
             std::vector<data::neighbor>& local = local_hoods.local();
             for (size_t i = range.begin(); i < range.end(); i++) {
                 std::unique_ptr<data::IVector> element = index[i];
-                double distance = metric(element.get(), &query);
+                double distance = metric(*element, query);
                 data::neighbor new_neighbor(i, distance, element.get());
                 for (size_t j = 0; j < k; j++) {
                     if (new_neighbor.getValue() < local[j].getValue()) {

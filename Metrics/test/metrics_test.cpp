@@ -44,7 +44,7 @@ TEST_P(MetricAccuracyTest, Distance) {
     auto p = GetParam();
 
     auto start    = chrono::steady_clock::now();
-    double result = (*metric)(v1.get(), v2.get());
+    double result = (*metric)(*v1, *v2);
     auto end      = chrono::steady_clock::now();
 
     EXPECT_NEAR(result, p.expected, p.tol)
@@ -63,14 +63,14 @@ TEST_P(MetricAccuracyTest, SameVectors) {
     }
     auto p = GetParam();
     auto start    = chrono::steady_clock::now();
-    double result = (*metric)(v1.get(), v1.get());
+    double result = (*metric)(*v1, *v1);
     auto end      = chrono::steady_clock::now();
     EXPECT_NEAR(result, expected, p.tol) << "Distance between identical vectors should be zero";
 }
 TEST_P(MetricAccuracyTest, DimensionMismatchThrows) {
     auto p = GetParam();
     auto other = factory_vector->createVector(p.dimension + 1, p.a);
-    EXPECT_THROW((*metric)(v1.get(), other.get()), std::invalid_argument);
+    EXPECT_THROW((*metric)(*v1, *other), std::invalid_argument);
 }
 INSTANTIATE_TEST_SUITE_P(
     AccurecyTests,

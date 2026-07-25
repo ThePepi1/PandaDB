@@ -9,8 +9,8 @@ namespace metrics {
     std::string_view DotMetric::name() const {
         return "dot_product";
     }
-    double DotMetric::operator()(data::IVector *first, data::IVector *second) const {
-        return (*first) * (*second);
+    double DotMetric::operator()(const data::IVector &first, const data::IVector &second) const {
+        return (first) * (second);
     }
 
 }

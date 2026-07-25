@@ -9,7 +9,7 @@ namespace data {
     Vector_CPU::Vector_CPU(size_t dimension, double* external_data) :IVector(dimension, external_data) {}
     Vector_CPU::Vector_CPU(size_t dimension, double value): IVector(dimension, value) {}
 
-    std::unique_ptr<IVector> Vector_CPU::operator+(double scalar) {
+    std::unique_ptr<IVector> Vector_CPU::operator+(double scalar) const{
         std::unique_ptr<IVector> result = std::make_unique<Vector_CPU>(dimension);
         double* resultDouble = result->Data();
         double* thisData = Data();
@@ -24,7 +24,7 @@ namespace data {
         return result;
     }
 
-    std::unique_ptr<IVector> Vector_CPU::operator+(IVector &other) {
+    std::unique_ptr<IVector> Vector_CPU::operator+(const IVector &other) const {
         if (dimension != other.Dimension())
             throw std::invalid_argument("Dimension mismatch");
 
@@ -43,7 +43,7 @@ namespace data {
         return  result;
     }
 
-    std::unique_ptr<IVector> Vector_CPU::operator-(IVector &other) {
+    std::unique_ptr<IVector> Vector_CPU::operator-(const IVector &other) const{
         if (dimension != other.Dimension())
             throw std::invalid_argument("Dimension mismatch");
         std::unique_ptr<IVector> result = std::make_unique<Vector_CPU>(dimension);
@@ -62,7 +62,7 @@ namespace data {
 
     }
 
-    std::unique_ptr<IVector> Vector_CPU::operator*(double scalar) {
+    std::unique_ptr<IVector> Vector_CPU::operator*(double scalar) const {
         std::unique_ptr<IVector> result = std::make_unique<Vector_CPU>(dimension);
         double* resultDouble = result->Data();
         double* thisData = Data();
@@ -78,7 +78,7 @@ namespace data {
         return result;
     }
 
-    std::unique_ptr<IVector> Vector_CPU::operator/(double scalar) {
+    std::unique_ptr<IVector> Vector_CPU::operator/(double scalar)const {
         if (std::abs(scalar) < 1e-12)
             throw std::runtime_error("Division by zero");
         std::unique_ptr<IVector> result = std::make_unique<Vector_CPU>(dimension);
@@ -96,7 +96,7 @@ namespace data {
         return result;
     }
 
-    double Vector_CPU::operator*(IVector &other) {
+    double Vector_CPU::operator*(const IVector &other) const{
         if (dimension != other.Dimension())
             throw std::invalid_argument("Dimension mismatch");
 
@@ -119,7 +119,7 @@ namespace data {
         return result;
     }
 
-    std::unique_ptr<IVector> Vector_CPU::operator^(IVector &other) {
+    std::unique_ptr<IVector> Vector_CPU::operator^(const IVector &other) const {
         if (dimension != 3 || other.Dimension() != 3)
             throw std::invalid_argument("Cross product is only defined for 3D vectors");
 
@@ -130,12 +130,12 @@ namespace data {
         return result;
     }
 
-    double Vector_CPU::norm()  {
+    double Vector_CPU::norm() const {
         double result = (*this) * (*this);
         return std::sqrt(result);
     }
 
-    std::unique_ptr<IVector> Vector_CPU::normalize() {
+    std::unique_ptr<IVector> Vector_CPU::normalize() const{
         double n = norm();
         if (n < 1e-10)
             throw std::runtime_error("Cannot normalize zero vector");
