@@ -38,6 +38,12 @@ add_library(panda_lib
         Algoritams/includes/Sercher.h
         Algoritams/includes/neighbor.h
         Algoritams/src/neighbor.cpp
+        File/includes/FileMenager.h
+        File/src/FileMenager.cpp
+        File/includes/fileHendler.h
+        File/src/fileHendler.cpp
+        Utils/config/BlockSize/BlockSize.h
+        Utils/config/BlockSize/BlockSize.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
