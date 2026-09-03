@@ -217,5 +217,4 @@ void file::fileReader::ToStart() {
 }
 file::fileReaderWriter::~fileReaderWriter() {
     commit();
-    stream.close();
 }

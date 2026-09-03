@@ -33,8 +33,8 @@ std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::
     waitingAccess.contains(filePath) && !waitingAccess[filePath].empty() && waitingAccess[filePath].front() != &cv ) {
         cv.wait(lock);
     }
-    auto it = std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
     waitingAccess[filePath].pop();
+    auto it = std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
     activeReaders[filePath]++;
     if(waitingAccess.contains(filePath) && !waitingAccess[filePath].empty()) {
         waitingAccess[filePath].front()->notify_one();
