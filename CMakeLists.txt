@@ -38,6 +38,13 @@ add_library(panda_lib
         Algoritams/includes/Sercher.h
         Algoritams/includes/neighbor.h
         Algoritams/src/neighbor.cpp
+        File/includes/FileMenager.h
+        File/src/FileMenager.cpp
+        File/includes/fileHendler.h
+        File/src/fileHendler.cpp
+        Utils/config/Block/Block.h
+        Utils/config/Block/BLock.cpp
+        File/test/fileTest.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -65,6 +72,7 @@ add_executable(PandaDB_tests
         Metrics/test/metrics_test.cpp
         Data/FlatIndex/test/FlatIndex_test.cpp
         Algoritams/tests/searcher_test.cpp
+        File/test/fileTest.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE
