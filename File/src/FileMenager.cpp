@@ -14,8 +14,9 @@ std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::
     if (waitingAccess.contains(filePath) && !waitingAccess[filePath].empty()) {
         return nullptr;
     }    
+    auto it = std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
     activeReaders[filePath]++;
-    return std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
+    return it; // Need to check is there any issues here without using make_unique
 
 }
 std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::subbscribeFileReader(const std::string& filePath) {
@@ -32,12 +33,13 @@ std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::
     waitingAccess.contains(filePath) && !waitingAccess[filePath].empty() && waitingAccess[filePath].front() != &cv ) {
         cv.wait(lock);
     }
+    auto it = std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
     waitingAccess[filePath].pop();
     activeReaders[filePath]++;
     if(waitingAccess.contains(filePath) && !waitingAccess[filePath].empty()) {
         waitingAccess[filePath].front()->notify_one();
     }
-    return std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
+    return it; // Need to check is there any issues here without using make_unique
 } 
 std::unique_ptr<file::fileReaderWriter, file::fileReaderWriter::Deleter> file::FileMenager::getFileReaderWriter(const std::string& filePath) {
     std::lock_guard<std::mutex> lock(mtx);
@@ -49,9 +51,10 @@ std::unique_ptr<file::fileReaderWriter, file::fileReaderWriter::Deleter> file::F
     }
     if (waitingAccess.contains(filePath) && !waitingAccess[filePath].empty()) {
         return nullptr;
-    }    
+    }  
+    auto it = std::unique_ptr<fileReaderWriter, fileReaderWriter::Deleter>(new fileReaderWriter(filePath)); // Need to check is there any issues here without using make_unique  
     activeWriters.insert(filePath);
-    return std::unique_ptr<fileReaderWriter, fileReaderWriter::Deleter>(new fileReaderWriter(filePath)); // Need to check is there any issues here without using make_unique
+    return it;
 }
 std::unique_ptr<file::fileReaderWriter, file::fileReaderWriter::Deleter> file::FileMenager::subbscribeFileReaderWriter(const std::string& filePath) {
     std::unique_lock<std::mutex> lock(mtx); 
@@ -66,12 +69,13 @@ std::unique_ptr<file::fileReaderWriter, file::fileReaderWriter::Deleter> file::F
     while(activeWriters.contains(filePath) || activeReaders.contains(filePath) && activeReaders[filePath] > 0 || waitingAccess.contains(filePath) && !waitingAccess[filePath].empty() && waitingAccess[filePath].front() != &cv ) {
         cv.wait(lock);
     }
+    auto it = std::unique_ptr<fileReaderWriter, fileReaderWriter::Deleter>(new fileReaderWriter(filePath)); // Need to check is there any issues here without using make_unique
     waitingAccess[filePath].pop();
     activeWriters.insert(filePath);
     if(waitingAccess.contains(filePath) && !waitingAccess[filePath].empty()) {
         waitingAccess[filePath].front()->notify_one();
     }
-    return std::unique_ptr<fileReaderWriter, fileReaderWriter::Deleter>(new fileReaderWriter(filePath)); 
+    return it;
 }
 void file::FileMenager::releseFileReader(const std::string& filePath) {
     std::lock_guard<std::mutex> lock(mtx);

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include "../../Utils/config/Block/Block.h"
+
 namespace file {
     class FileMenager;
     class fileReader { 
@@ -11,7 +13,7 @@ namespace file {
             size_t head;
             size_t fileSize;
             std::fstream stream;
-            char buffer[1024];
+            char buffer[config::BLOCK_SIZE];
             int LoadedBlock = -1;
             std::string filePath;
             virtual bool LoadBlock(int block);

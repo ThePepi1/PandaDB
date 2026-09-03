@@ -42,8 +42,8 @@ add_library(panda_lib
         File/src/FileMenager.cpp
         File/includes/fileHendler.h
         File/src/fileHendler.cpp
-        Utils/config/BlockSize/BlockSize.h
-        Utils/config/BlockSize/BlockSize.cpp
+        Utils/config/Block/Block.h
+        Utils/config/Block/BLock.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
