@@ -215,3 +215,7 @@ void file::fileReader::ToEnd() {
 void file::fileReader::ToStart() {
     seek(0);
 }
+file::fileReaderWriter::~fileReaderWriter() {
+    commit();
+    stream.close();
+}

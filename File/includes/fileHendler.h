@@ -9,7 +9,7 @@ namespace file {
         protected :
             fileReader(const std::string& filePath) ;
             fileReader() = default;
-            ~fileReader();  
+            virtual ~fileReader();  
             size_t head;
             size_t fileSize;
             std::fstream stream;
@@ -40,6 +40,7 @@ namespace file {
             bool sizeGrew = false;
             bool LoadBlock(int block) override;
         public:
+            virtual ~fileReaderWriter() override;
             void commit();
             int write(const char* buffer, int size);
             struct Deleter {
