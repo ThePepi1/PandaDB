@@ -1,6 +1,8 @@
 #include "../includes/fileHendler.h"
 #include "../includes/FileMenager.h"
-#include "../../Utils/config/BlockSize/BlockSize.h"
+#include "../../Utils/config/Block/Block.h"
+#include <filesystem>
+#include <cstring>
 
 
 void file::fileReader::Deleter::operator()(fileReader* reader) const {
@@ -14,15 +16,19 @@ void file::fileReaderWriter::Deleter::operator()(fileReaderWriter* reader) const
 size_t file::fileReader::getHead() const {
     return head;
 }
-void file::fileReader::setHead(size_t newHead) {
+void file::fileReader::seek(size_t newHead) {
+    if (newHead > fileSize) {
+        throw std::out_of_range("Head position is out of file size range.");
+    }
     head = newHead;
 }
 file::fileReader::fileReader(const std::string& filePath) : filePath(filePath), head(0), stream(filePath, std::ios::binary| std::ios::in | std::ios::out) {
     if (!stream.is_open()) {
         throw std::runtime_error("Failed to open file: " + filePath);
     }
+    findEnd();
 }
-file::fileReader::~fileReader() {\
+file::fileReader::~fileReader() {
     stream.close();
 }
 
@@ -40,4 +46,147 @@ bool file::fileReader::LoadBlock(int block) {
     LoadedBlock = block;
     return true;
 }
+int file::fileReader::read(char* outBuffer, int size) {
+    int bytesRead = 0;
+    while (bytesRead < size) {
+        int block = head / config::BLOCK_SIZE;
+        int offset = head % config::BLOCK_SIZE;
+        if (!LoadBlock(block)) {
+            break; // Failed to load the block
+        }
+        int bytesToCopy = std::min(size - bytesRead, static_cast<int>(config::BLOCK_SIZE - offset));
+        std::memcpy(outBuffer + bytesRead, buffer + offset, bytesToCopy);
+        bytesRead += bytesToCopy;
+        this->seek(head + bytesToCopy);
+    }
+    return bytesRead;
+}
+int file::fileReader::read(char* outBuffer, int size, int offset) {
+    int bytesRead = 0;
+    this->seek(offset);
+    return read(outBuffer, size);
+}
+size_t file::fileReader::getFileSize() const {
+    return fileSize;
+}
+void file::fileReader::findEnd() {
+    if (!std::filesystem::exists(filePath)) {
+        fileSize = 0;
+        head = 0;
+        return;
+    }
+    uint64_t phisicalfileSize = std::filesystem::file_size(filePath);
+    if (fileSize < config::EndMarkerSize) {
+        this->fileSize = 0;
+        head = 0;
+        return;
+    }
+    int last_block = (phisicalfileSize - 1) / config::BLOCK_SIZE - 1;
+    char temp[config::BLOCK_SIZE * 2]; 
+    stream.clear(); // Clear any error flags
+    stream.seekg(last_block * config::BLOCK_SIZE, std::ios::beg);
+    stream.read(temp, config::BLOCK_SIZE * 2);
+    stream.clear(); // Clear any error flags
+    for (int i = config::BLOCK_SIZE * 2 - config::EndMarkerSize; i >= 0; --i) {
+        if (std::memcmp(temp + i, config::EndMarker, config::EndMarkerSize) == 0) {
+            fileSize = last_block * config::BLOCK_SIZE + i;
+            head = fileSize;
+            return;
+        }
+    }
+    fileSize = 0;
+    head = 0;
+    return;
 
+}
+void file::fileReaderWriter::commit() {
+    if (!dirty || LoadedBlock < 0) return;
+
+    stream.clear();
+    stream.seekp(static_cast<std::streamoff>(LoadedBlock) * config::BLOCK_SIZE, std::ios::beg);
+    stream.write(buffer, config::BLOCK_SIZE);
+
+    if (sizeGrew) {
+        size_t markerBlock = fileSize / config::BLOCK_SIZE;
+
+        if (static_cast<size_t>(LoadedBlock) == markerBlock) {
+            size_t markerOffsetInBlock = fileSize % config::BLOCK_SIZE;
+            size_t spaceInCurrentBlock = config::BLOCK_SIZE - markerOffsetInBlock;
+
+            size_t firstChunk = std::min(spaceInCurrentBlock, static_cast<size_t>(config::EndMarkerSize));
+            size_t secondChunk = config::EndMarkerSize - firstChunk;
+
+            // deo 1: ono što stane u trenutni blok
+            stream.clear();
+            stream.seekp(static_cast<std::streamoff>(fileSize), std::ios::beg);
+            stream.write(config::EndMarker, static_cast<std::streamsize>(firstChunk));
+
+            // deo 2: ceo sledeći blok - ostatak markera + zeroed rest
+            if (secondChunk > 0) {
+                char nextBuf[config::BLOCK_SIZE];
+                std::memset(nextBuf, 0, config::BLOCK_SIZE);
+                std::memcpy(nextBuf, config::EndMarker + firstChunk, secondChunk);
+
+                stream.clear();
+                stream.seekp(static_cast<std::streamoff>(LoadedBlock + 1) * config::BLOCK_SIZE, std::ios::beg);
+                stream.write(nextBuf, config::BLOCK_SIZE);
+            }
+
+            sizeGrew = false;
+        }
+    }
+
+    stream.flush();
+    dirty = false;
+}
+bool file::fileReaderWriter::LoadBlock(int block) {
+    if (block == LoadedBlock) {
+        return true; // Block is already loaded
+    }
+    this->commit();
+    return fileReader::LoadBlock(block);
+}
+int file::fileReaderWriter::write(const char* data, int size) {
+    int written = 0;
+
+    while (written < size) {
+        int block = static_cast<int>(head / config::BLOCK_SIZE);
+        int offsetInBlock = static_cast<int>(head % config::BLOCK_SIZE);
+
+        if (!LoadBlock(block)) {
+            // blok ne postoji na disku (pišemo iza trenutnog fizičkog kraja) -> prazan blok
+            std::memset(buffer, 0, config::BLOCK_SIZE);
+            LoadedBlock = block;
+        }
+
+        int chunk = std::min<int>(config::BLOCK_SIZE - offsetInBlock, size - written);
+        std::memcpy(buffer + offsetInBlock, data + written, chunk);
+        dirty = true;
+
+        head += chunk;
+        written += chunk;
+
+        if (head > fileSize) {
+            fileSize = head;
+            sizeGrew = true;
+        }
+
+        if (offsetInBlock + chunk == static_cast<int>(config::BLOCK_SIZE)) {
+            commit(); // blok upravo popunjen do kraja -> odmah flush
+        }
+    }
+
+    return written;
+}
+void file::fileReader::move(size_t offset) {
+    if (head + offset > fileSize) {
+        throw std::out_of_range("Move operation exceeds file size.");
+    }
+    head += offset;
+}
+void file::fileReader::ToEnd() {
+    head = fileSize;
+}
+void file::fileReader::ToStart() {
+    head = 0;
+}
