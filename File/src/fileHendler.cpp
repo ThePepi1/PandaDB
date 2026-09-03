@@ -78,29 +78,54 @@ void file::fileReader::findEnd() {
         head = 0;
         return;
     }
-    uint64_t phisicalfileSize = std::filesystem::file_size(filePath);
-    if (fileSize < config::EndMarkerSize) {
-        this->fileSize = 0;
+
+    const uint64_t physicalFileSize =
+        std::filesystem::file_size(filePath);
+
+    if (physicalFileSize < config::EndMarkerSize) {
+        fileSize = 0;
+        head = 0;
+        return;
+    }    const uint64_t lastBlock =
+        (physicalFileSize - 1) / config::BLOCK_SIZE;
+
+    const uint64_t startBlock =
+        (lastBlock > 0) ? lastBlock - 1 : 0;
+
+    const uint64_t offset =
+        startBlock * config::BLOCK_SIZE;
+
+    const uint64_t bytesToRead = physicalFileSize - offset;
+
+    char temp[config::BLOCK_SIZE * 2];
+
+    stream.clear();
+    stream.seekg(offset, std::ios::beg);
+    stream.read(temp, bytesToRead);
+
+    const size_t bytesRead = stream.gcount();
+
+    // Not enough data to contain the end marker
+    if (bytesRead < static_cast<size_t>(config::EndMarkerSize)) {
+        fileSize = 0;
         head = 0;
         return;
     }
-    int last_block = (phisicalfileSize - 1) / config::BLOCK_SIZE - 1;
-    char temp[config::BLOCK_SIZE * 2]; 
-    stream.clear(); // Clear any error flags
-    stream.seekg(last_block * config::BLOCK_SIZE, std::ios::beg);
-    stream.read(temp, config::BLOCK_SIZE * 2);
-    stream.clear(); // Clear any error flags
-    for (int i = config::BLOCK_SIZE * 2 - config::EndMarkerSize; i >= 0; --i) {
-        if (std::memcmp(temp + i, config::EndMarker, config::EndMarkerSize) == 0) {
-            fileSize = last_block * config::BLOCK_SIZE + i;
+
+    // Search backwards for the last occurrence of EndMarker
+    for (size_t i =bytesRead - config::EndMarkerSize;i >= 0; --i) {
+
+        if (std::memcmp(temp + i,config::EndMarker, config::EndMarkerSize) == 0) {
+            fileSize = offset + i;
             head = fileSize;
+            stream.clear();
             return;
         }
     }
     fileSize = 0;
     head = 0;
+    stream.clear();
     return;
-
 }
 void file::fileReaderWriter::commit() {
     if (!dirty || LoadedBlock < 0) return;
