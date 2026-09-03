@@ -20,6 +20,9 @@ void file::fileReader::seek(size_t newHead) {
     if (newHead > fileSize) {
         throw std::out_of_range("Head position is out of file size range.");
     }
+    if(newHead < 0) {
+        throw std::out_of_range("Head position cannot be negative.");
+    }
     head = newHead;
 }
 file::fileReader::fileReader(const std::string& filePath) : filePath(filePath), head(0), stream(filePath, std::ios::binary| std::ios::in | std::ios::out) {
@@ -179,14 +182,12 @@ int file::fileReaderWriter::write(const char* data, int size) {
     return written;
 }
 void file::fileReader::move(size_t offset) {
-    if (head + offset > fileSize) {
-        throw std::out_of_range("Move operation exceeds file size.");
-    }
-    head += offset;
+    size_t newHead = head + offset;
+    seek(newHead);
 }
 void file::fileReader::ToEnd() {
-    head = fileSize;
+    seek(fileSize);
 }
 void file::fileReader::ToStart() {
-    head = 0;
+    seek(0);
 }
