@@ -36,8 +36,7 @@ file::fileReader::~fileReader() {
 
 file::fileReaderWriter::fileReaderWriter(const std::string& filePath) : fileReader(filePath) {
 }
-
-bool file::fileReader::LoadBlock(int block) {
+bool file::fileReader::LoadBlock(long long block) {
     if (block == LoadedBlock) {
         return true; // Block is already loaded
     }
@@ -48,23 +47,23 @@ bool file::fileReader::LoadBlock(int block) {
     LoadedBlock = block;
     return true;
 }
-int file::fileReader::read(char* outBuffer, int size) {
-    int bytesRead = 0;
+long long file::fileReader::read(char* outBuffer, long long size) {
+    long long bytesRead = 0;
     while (bytesRead < size) {
-        int block = head / config::BLOCK_SIZE;
-        int offset = head % config::BLOCK_SIZE;
+        long long block = head / config::BLOCK_SIZE;
+        long long offset = head % config::BLOCK_SIZE;
         if (!LoadBlock(block)) {
             break; // Failed to load the block
         }
-        int bytesToCopy = std::min(size - bytesRead, static_cast<int>(config::BLOCK_SIZE - offset));
+        long long bytesToCopy = std::min(size - bytesRead, static_cast<long long>(config::BLOCK_SIZE - offset));
         std::memcpy(outBuffer + bytesRead, buffer + offset, bytesToCopy);
         bytesRead += bytesToCopy;
         this->seek(head + bytesToCopy);
     }
     return bytesRead;
 }
-int file::fileReader::read(char* outBuffer, int size, int offset) {
-    int bytesRead = 0;
+long long file::fileReader::read(char* outBuffer, long long size, long long offset) {
+    long long bytesRead = 0;
     this->seek(offset);
     return read(outBuffer, size);
 }
@@ -166,19 +165,19 @@ void file::fileReaderWriter::commit() {
     stream.flush();
     dirty = false;
 }
-bool file::fileReaderWriter::LoadBlock(int block) {
+bool file::fileReaderWriter::LoadBlock(long long block) {
     if (block == LoadedBlock) {
         return true; // Block is already loaded
     }
     this->commit();
     return fileReader::LoadBlock(block);
 }
-int file::fileReaderWriter::write(const char* data, int size) {
-    int written = 0;
+long long file::fileReaderWriter::write(const char* data, long long size) {
+    long long written = 0;
 
     while (written < size) {
         int block = static_cast<int>(head / config::BLOCK_SIZE);
-        int offsetInBlock = static_cast<int>(head % config::BLOCK_SIZE);
+        long long offsetInBlock = static_cast<long long>(head % config::BLOCK_SIZE);
 
         if (!LoadBlock(block)) {
             // blok ne postoji na disku (pišemo iza trenutnog fizičkog kraja) -> prazan blok
@@ -186,7 +185,7 @@ int file::fileReaderWriter::write(const char* data, int size) {
             LoadedBlock = block;
         }
 
-        int chunk = std::min<int>(config::BLOCK_SIZE - offsetInBlock, size - written);
+        long long chunk = std::min<long long>(config::BLOCK_SIZE - offsetInBlock, size - written);
         std::memcpy(buffer + offsetInBlock, data + written, chunk);
         dirty = true;
 
@@ -217,4 +216,31 @@ void file::fileReader::ToStart() {
 }
 file::fileReaderWriter::~fileReaderWriter() {
     commit();
+}
+long long file::fileReader::operator>>(int& data) {
+    return read(reinterpret_cast<char*>(&data), sizeof(int));
+}
+long long file::fileReader::operator>>(char* buffer) {
+    return read(buffer, std::strlen(buffer));
+}
+long long file::fileReaderWriter::operator<<(int data) {
+    return write(reinterpret_cast<const char*>(&data), sizeof(long long));
+}
+long long file::fileReaderWriter::operator<<(double data) {
+    return write(reinterpret_cast<const char*>(&data), sizeof(double));
+}
+long long file::fileReaderWriter::operator<<(const char* buffer) {
+    return write(buffer, std::strlen(buffer));
+}
+long long file::fileReaderWriter::operator<<(const std::string& buffer) {
+    return write(buffer.c_str(), buffer.size());
+}
+long long file::fileReaderWriter::operator<<(long long data) {
+    return write(reinterpret_cast<const char*>(&data), sizeof(long long));
+} 
+long long file::fileReader::operator>>(long long& data) {
+    return read(reinterpret_cast<char*>(&data), sizeof(long long));
+}
+long long file::fileReader::operator>>(double& data) {
+    return read(reinterpret_cast<char*>(&data), sizeof(double));
 }
