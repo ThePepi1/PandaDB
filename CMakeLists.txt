@@ -45,6 +45,9 @@ add_library(panda_lib
         Utils/config/Block/Block.h
         Utils/config/Block/BLock.cpp
         File/test/fileTest.cpp
+        KMeans/CodeBooks/includes/codeBook.h
+        Data/VectorStream/includes/IVectorStream.h
+        KMeans/CodeBooks/src/codeBook.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
