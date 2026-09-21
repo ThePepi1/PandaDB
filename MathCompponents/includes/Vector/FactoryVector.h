@@ -8,6 +8,9 @@ namespace data {
         virtual std::unique_ptr<IVector> createVector(int dimension) = 0;
         virtual std::unique_ptr<IVector> createVector(int dimension, double* external_data) = 0;
         virtual std::unique_ptr<IVector> createVector(int dimension, double data) = 0;
+        virtual std::unique_ptr<IVector> createVector(int dimension, double* external_data, bool owner) = 0;
+        virtual std::unique_ptr<IVector> createVector() = 0;
+
         virtual ~FactoryVector() = default;
     };
 }

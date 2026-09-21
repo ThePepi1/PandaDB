@@ -244,3 +244,10 @@ long long file::fileReader::operator>>(long long& data) {
 long long file::fileReader::operator>>(double& data) {
     return read(reinterpret_cast<char*>(&data), sizeof(double));
 }
+long long file::fileReader::operator>>(size_t& data) {
+    return read(reinterpret_cast<char*>(&data), sizeof(size_t));
+}
+long long file::fileReaderWriter::operator<<(size_t data) {
+    return write(reinterpret_cast<const char*>(&data), sizeof(size_t));
+}
+     

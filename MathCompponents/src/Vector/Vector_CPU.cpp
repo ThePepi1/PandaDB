@@ -1,5 +1,6 @@
 
 #include "../../includes/Vector/Vector_CPU.h"
+#include "Vector/IVector.h"
 
 #include <immintrin.h>
 #include <cmath>
@@ -8,6 +9,8 @@ namespace data {
     Vector_CPU::Vector_CPU(size_t dimension):IVector(dimension) {}
     Vector_CPU::Vector_CPU(size_t dimension, double* external_data) :IVector(dimension, external_data) {}
     Vector_CPU::Vector_CPU(size_t dimension, double value): IVector(dimension, value) {}
+    Vector_CPU::Vector_CPU(size_t dimension, double* external_data, bool owner): IVector(dimension, external_data, owner) {}
+    Vector_CPU::Vector_CPU(): IVector() {}
 
     std::unique_ptr<IVector> Vector_CPU::operator+(double scalar) const{
         std::unique_ptr<IVector> result = std::make_unique<Vector_CPU>(dimension);
@@ -141,5 +144,91 @@ namespace data {
             throw std::runtime_error("Cannot normalize zero vector");
         return (*this) / n;
     }
+    IVector& Vector_CPU::operator+=(const IVector &other) {
+        if (dimension != other.Dimension())
+            throw std::invalid_argument("Dimension mismatch");
+        double * resultDouble = Data();
+        double *thisData = Data();
+        double *otherData = other.Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        size_t i = 0;
+        for (; i+ avx_double <= dimension; i+=avx_double, thisData += avx_double, resultDouble += avx_double, otherData += avx_double) {
+            _mm256_storeu_pd(resultDouble, _mm256_add_pd(_mm256_loadu_pd(thisData), _mm256_loadu_pd(otherData)));
+        }
+        for (; i < dimension; ++i, ++resultDouble, ++thisData, ++otherData)
+            *resultDouble = *thisData + *otherData;
+
+        return *this;
+    }
+    IVector& Vector_CPU::operator-=(const IVector &other) {
+        if (dimension != other.Dimension())
+            throw std::invalid_argument("Dimension mismatch");
+        double * resultDouble = Data();
+        double *thisData = Data();
+        double *otherData = other.Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        size_t i = 0;
+        for (; i + avx_double <= dimension; i+= avx_double, thisData += avx_double, resultDouble += avx_double, otherData += avx_double) {
+            _mm256_storeu_pd(resultDouble, _mm256_sub_pd(_mm256_loadu_pd(thisData), _mm256_loadu_pd(otherData)));
+        }
+        for (; i < dimension; ++i, ++resultDouble, ++thisData, ++otherData)
+            *resultDouble = *thisData - *otherData;
+
+        return *this;
+    }
+    IVector& Vector_CPU::operator*=(double scalar) {
+        double* thisData = Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        __m256d scalarRegister = _mm256_set1_pd(scalar);
+        size_t i = 0;
+        for (; i + avx_double <= dimension; i+=avx_double, thisData += avx_double) {
+            _mm256_storeu_pd(thisData, _mm256_mul_pd(_mm256_loadu_pd(thisData), scalarRegister));
+        }
+        for (; i < dimension; ++i, ++thisData)
+            *thisData *= scalar;
+
+        return *this;
+    }
+    IVector& Vector_CPU::operator/=(double scalar) {
+        if (std::abs(scalar) < 1e-12)
+            throw std::runtime_error("Division by zero");
+        double* thisData = Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        __m256d scalarRegister = _mm256_set1_pd(scalar);
+        size_t i = 0;
+        for (; i + avx_double <= dimension; i+=avx_double, thisData += avx_double) {
+            _mm256_storeu_pd(thisData, _mm256_div_pd(_mm256_loadu_pd(thisData), scalarRegister));
+        }
+        for (; i < dimension; ++i, ++thisData)
+            *thisData /= scalar;
+        return *this;
+    }
+    IVector& Vector_CPU::operator+=(double scalar) {
+        double* thisData = Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        __m256d scalarRegister = _mm256_set1_pd(scalar);
+        size_t i = 0;
+        for (; i + avx_double <= dimension; i+=avx_double, thisData += avx_double) {
+            _mm256_storeu_pd(thisData, _mm256_add_pd(_mm256_loadu_pd(thisData), scalarRegister));
+        }
+        for (; i < dimension; ++i, ++thisData)
+            *thisData += scalar;
+
+        return *this;
+    }
+    IVector& Vector_CPU::operator-=(double scalar) {
+        double* thisData = Data();
+        constexpr int avx_double = 256 / (sizeof(double) * 8);
+        __m256d scalarRegister = _mm256_set1_pd(scalar);
+        size_t i = 0;
+        for (; i + avx_double <= dimension; i+=avx_double, thisData
+    += avx_double) {
+                _mm256_storeu_pd(thisData, _mm256_sub_pd(_mm256_loadu_pd(thisData), scalarRegister));
+            }
+        for (; i < dimension; ++i, ++thisData)
+            *thisData -= scalar;
+        return *this;
+    }
+
 }
 
