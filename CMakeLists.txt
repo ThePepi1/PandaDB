@@ -52,6 +52,10 @@ add_library(panda_lib
         KMeans/CodeBooks/includes/trainer.h
         KMeans/CodeBooks/src/productquntizier.cpp
         KMeans/CodeBooks/src/trainer.cpp
+        Data/LinearStorage/includes/linearStorage.h
+        Data/LinearStorage/src/linearStorage.cpp
+        Data/VectorStream/includes/IVectorReaderStream.h
+        Data/VectorStream/src/IVectorReaderStream.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

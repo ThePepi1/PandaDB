@@ -9,6 +9,7 @@ namespace file {
         protected :
             fileReader(const std::string& filePath) ;
             fileReader() = default;
+            fileReader(const std::string& filePath, bool createIfNotExists);
             virtual ~fileReader();  
             size_t head;
             size_t fileSize;
@@ -41,6 +42,7 @@ namespace file {
     class fileReaderWriter : public fileReader { 
         private :
             fileReaderWriter(const std::string& filePath);
+            
             bool dirty = false;
             bool sizeGrew = false;
             bool LoadBlock(long long block) override;

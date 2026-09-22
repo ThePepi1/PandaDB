@@ -30,7 +30,7 @@ namespace KMeans{
                     int startIdx = i * (pq.getDim() / pq.getNumSubspaces());
                     int endIdx = (i == pq.getNumSubspaces() - 1) ? pq.getDim() : startIdx + (pq.getDim() / pq.getNumSubspaces());
                     // Can do it bcs of the ownership
-                    std::unique_ptr<data::IVector> subVector = pq.factory->createVector(endIdx - startIdx, (*point)[startIdx]);
+                    std::unique_ptr<data::IVector> subVector = pq.factory.createVector(endIdx - startIdx, (*point)[startIdx]);
                     pq.codeBooks[i]->fit(*subVector, metrics);
                 }
 
@@ -63,7 +63,7 @@ namespace KMeans{
                     if (continueTraining[i]) {
                         int startIdx = i * (pq.getDim() / pq.getNumSubspaces());
                         int endIdx = (i == pq.getNumSubspaces() - 1) ? pq.getDim() : startIdx + (pq.getDim() / pq.getNumSubspaces());
-                        std::unique_ptr<data::IVector> subVector = pq.factory->createVector(endIdx - startIdx, (*point)[startIdx]);
+                        std::unique_ptr<data::IVector> subVector = pq.factory.createVector(endIdx - startIdx, (*point)[startIdx]);
                         pq.codeBooks[i]->fit(*subVector, metrics);
                     }
 

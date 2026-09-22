@@ -34,7 +34,7 @@ file::fileReader::~fileReader() {
     stream.close();
 }
 
-file::fileReaderWriter::fileReaderWriter(const std::string& filePath) : fileReader(filePath) {
+file::fileReaderWriter::fileReaderWriter(const std::string& filePath) : fileReader(filePath, true) {
 }
 bool file::fileReader::LoadBlock(long long block) {
     if (block == LoadedBlock) {
@@ -250,4 +250,32 @@ long long file::fileReader::operator>>(size_t& data) {
 long long file::fileReaderWriter::operator<<(size_t data) {
     return write(reinterpret_cast<const char*>(&data), sizeof(size_t));
 }
-     
+file::fileReader::fileReader(
+    const std::string& filePath,bool createIfMissing)
+    : filePath(filePath),
+      head(0),
+      stream(){
+    if (createIfMissing && !std::filesystem::exists(filePath)) {
+        std::ofstream create(filePath, std::ios::binary);
+        if (!create) {
+            throw std::runtime_error(
+                "Failed to create file: " + filePath
+            );
+        }
+    }
+
+    stream.open(
+        filePath,
+        std::ios::binary |
+        std::ios::in |
+        std::ios::out
+    );
+
+    if (!stream.is_open()) {
+        throw std::runtime_error(
+            "Failed to open file: " + filePath
+        );
+    }
+
+    findEnd();
+}   
