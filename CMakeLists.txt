@@ -45,13 +45,13 @@ add_library(panda_lib
         Utils/config/Block/Block.h
         Utils/config/Block/BLock.cpp
         File/test/fileTest.cpp
-        KMeans/CodeBooks/includes/codeBook.h
+        KMeans/includes/codeBook.h
         Data/VectorStream/includes/IVectorStream.h
-        KMeans/CodeBooks/src/codeBook.cpp
-        KMeans/CodeBooks/includes/productquntizier.h
-        KMeans/CodeBooks/includes/trainer.h
-        KMeans/CodeBooks/src/productquntizier.cpp
-        KMeans/CodeBooks/src/trainer.cpp
+        KMeans/includes/codeBook.h
+        KMeans/includes/productquntizier.h
+        KMeans/includes/trainer.h
+        KMeans/src/productquntizier.cpp
+        KMeans/src/trainer.cpp
         Data/LinearStorage/includes/linearStorage.h
         Data/LinearStorage/src/linearStorage.cpp
         Data/VectorStream/includes/IVectorReaderStream.h
