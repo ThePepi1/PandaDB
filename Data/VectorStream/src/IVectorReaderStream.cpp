@@ -1,8 +1,8 @@
 #include "../includes/IVectorReaderStream.h"
 
 namespace DataStructures {
-    IVectorReaderStream::IVectorReaderStream(size_t dim, size_t totalVectors, const LinearStorage& storage, data::FactoryVector& factory)
-        : currentIndex(0), totalVectors(totalVectors), storage(storage), factory(factory) {
+    IVectorReaderStream::IVectorReaderStream(size_t dim, size_t start, size_t end, const LinearStorage& storage, data::FactoryVector& factory)
+        : currentIndex(start), end(end), start(start), storage(storage), factory(factory) {
     }
     std::vector<std::shared_ptr<data::IVector>> IVectorReaderStream::getVectors(size_t count) {
         std::vector<std::shared_ptr<data::IVector>> vectors;
@@ -12,7 +12,7 @@ namespace DataStructures {
         return vectors;
     }
     bool IVectorReaderStream::hasNext() {
-        return currentIndex < totalVectors;
+        return currentIndex < end;
     }
     std::shared_ptr<data::IVector> IVectorReaderStream::next() {
         if (!hasNext()) {
@@ -24,7 +24,7 @@ namespace DataStructures {
         return vector;
     }
     void IVectorReaderStream::reset() {
-        currentIndex = 0;
+        currentIndex = start;
     }
     int IVectorReaderStream::getDim() const {
         return storage.getDim();

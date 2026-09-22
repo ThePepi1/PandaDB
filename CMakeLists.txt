@@ -84,6 +84,7 @@ add_executable(PandaDB_tests
         Data/FlatIndex/test/FlatIndex_test.cpp
         Algoritams/tests/searcher_test.cpp
         File/test/fileTest.cpp
+        Data/LinearStorage/test/linearStorageTest.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE

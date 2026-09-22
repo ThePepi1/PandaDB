@@ -224,7 +224,7 @@ long long file::fileReader::operator>>(char* buffer) {
     return read(buffer, std::strlen(buffer));
 }
 long long file::fileReaderWriter::operator<<(int data) {
-    return write(reinterpret_cast<const char*>(&data), sizeof(long long));
+    return write(reinterpret_cast<const char*>(&data), sizeof(int));
 }
 long long file::fileReaderWriter::operator<<(double data) {
     return write(reinterpret_cast<const char*>(&data), sizeof(double));

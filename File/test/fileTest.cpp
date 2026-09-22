@@ -74,7 +74,7 @@ TEST_F(FileHandlerTest, GetFileReaderWriterThrowsWhenFileMissing) {
     fs::path missing = makeTempPath("missing_rw");
     removeIfExists(missing);
     EXPECT_THROW(
-        file::FileMenager::getInstance().getFileReaderWriter(missing.string()),
+        file::FileMenager::getInstance().getFileReader(missing.string()),
         std::runtime_error);
 }
 

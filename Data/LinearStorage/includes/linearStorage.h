@@ -21,7 +21,7 @@ class LinearStorage {
         LinearStorage& saveVector(const data::IVector& vector);
         const LinearStorage& loadVector(long long index, data::IVector& vector) const;
         std::unique_ptr<IVectorStream> getVectorStream(double proportion, data::FactoryVector & factory) const;
-        std::unique_ptr<IVectorStream> getVectorStream(long long startIndex, long long endIndex, data::FactoryVector & factory) const;
+        std::unique_ptr<IVectorStream> getVectorStream(size_t startIndex, size_t endIndex, data::FactoryVector & factory) const;
         std::unique_ptr<IVectorStream> getVectorStream(data::FactoryVector & factory) const;
     };
 }

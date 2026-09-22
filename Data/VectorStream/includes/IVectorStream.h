@@ -1,7 +1,6 @@
 #pragma once 
 #include "../includes/Vector/IVector.h"
 #include <vector>
-#include "../includes/Vector/FactoryVector.h"
 namespace DataStructures { 
     class IVectorStream {
         private:

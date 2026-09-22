@@ -1,5 +1,8 @@
 #include "../includes/linearStorage.h"
 #include "../../File/includes/FileMenager.h"
+#include "../../VectorStream/includes/IVectorReaderStream.h"
+#include <stdexcept>
+#include <memory>
 namespace DataStructures {
     LinearStorage::LinearStorage(const std::string& filePath, size_t dim, long long size)
         : filePath(filePath), dim(dim), size(size) {
@@ -12,16 +15,19 @@ namespace DataStructures {
             *writer << size;
             writer->commit();
         }
-    LinearStorage::LinearStorage(const std::string& filePath)
-        : filePath(filePath) {
-            file::FileMenager& menager = file::FileMenager::getInstance();
-            auto reader = menager.subbscribeFileReader(filePath);
-            if (!reader) {
-                throw std::runtime_error("Failed to open file for reading: " + filePath);
-            }
-            *reader >> dim;
-            *reader >> size;
-        }
+   LinearStorage::LinearStorage(const std::string& filePath)
+    : filePath(filePath) {
+    file::FileMenager& menager = file::FileMenager::getInstance(); 
+    auto reader = menager.subbscribeFileReader(filePath);
+    if (!reader) {
+        throw std::runtime_error(
+            "Failed to open file for reading: " + filePath
+        );
+    }
+    reader->seek(0);
+    *reader >> dim;
+    *reader >> size;
+}
     size_t LinearStorage::getDim() const {
         return dim;
     }
@@ -68,6 +74,17 @@ namespace DataStructures {
         }
         return sizeof(size_t) + sizeof(long long) + index * data::IVector::getSizeInBytes(dim);
     }
-
+    std::unique_ptr<IVectorStream> LinearStorage::getVectorStream(data::FactoryVector & factory) const {
+       return std::make_unique<IVectorReaderStream>(dim,0, size, *this, factory);
+    }
+    std::unique_ptr<IVectorStream> LinearStorage::getVectorStream(size_t start, size_t end, data::FactoryVector & factory) const {
+        if (start >= end || end > size) {
+            throw std::out_of_range("Invalid range for vector stream.");
+        }
+        return std::make_unique<IVectorReaderStream>(dim, start, end, *this, factory);
+    }
+    std::unique_ptr<IVectorStream> LinearStorage::getVectorStream(double proportion, data::FactoryVector & factory) const {
+        return nullptr;    
+    }
 
 }

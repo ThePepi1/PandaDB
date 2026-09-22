@@ -267,3 +267,153 @@ TEST(ScalarDivisionEdgeTest, DivisionByZeroThrows) {
     auto v = factory_vector->createVector(10, 1.0);
     EXPECT_THROW((*v) / 0.0, std::runtime_error);
 }
+class EqualityTestVector : public ::testing::TestWithParam<VectorParams> {
+protected:
+    std::unique_ptr<IVector> v1, v2;
+    void SetUp() override {
+        auto p = GetParam();
+        v1 = factory_vector->createVector(p.dimension, p.a);
+        v2 = factory_vector->createVector(p.dimension, p.a); // same fill as v1
+    }
+};
+
+TEST_P(EqualityTestVector, IdenticalVectorsAreEqual) {
+    EXPECT_TRUE((*v1) == (*v2));
+}
+
+TEST_P(EqualityTestVector, VectorEqualsItself) {
+    EXPECT_TRUE((*v1) == (*v1));
+}
+
+TEST_P(EqualityTestVector, ModifiedVectorIsNotEqual) {
+    (*v2)(0) += 1.0;
+    EXPECT_FALSE((*v1) == (*v2));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    EqualityTests,
+    EqualityTestVector,
+    ::testing::Values(
+        VectorParams{1, 5.0, 0.0, 0.0},
+        VectorParams{7, 3.0, 0.0, 0.0},
+        VectorParams{16, 1.5, 0.0, 0.0},
+        VectorParams{1000, 2.0, 0.0, 0.0}
+    )
+);
+
+// NOTE: assumes mismatched dimensions throw, matching the other operators.
+// If operator== is meant to just return false instead, swap this for
+// EXPECT_FALSE((*a) == (*b)).
+TEST(EqualityEdgeTest, DimensionMismatchThrows) {
+    auto a = factory_vector->createVector(4, 1.0);
+    auto b = factory_vector->createVector(5, 1.0);
+    EXPECT_EQ((*a) == (*b), false);
+}
+
+class AssignmentTestVector : public ::testing::TestWithParam<VectorParams> {
+protected:
+    std::unique_ptr<IVector> v1, v2;
+    void SetUp() override {
+        auto p = GetParam();
+        v1 = factory_vector->createVector(p.dimension, p.a);
+        v2 = factory_vector->createVector(p.dimension, p.b);
+    }
+};
+
+TEST_P(AssignmentTestVector, OperatorSyntaxAssignsValues) {
+    *v1 = *v2;
+    expect_vector_near(*v1, *v2);
+}
+
+TEST_P(AssignmentTestVector, AssignmentDoesNotAliasSource) {
+    *v1 = *v2;
+    (*v2)(0) += 100.0;
+    EXPECT_NE((*v1)(0), (*v2)(0));
+}
+
+TEST_P(AssignmentTestVector, SelfAssignmentIsSafe) {
+    *v1 = *v1;
+    unique_ptr<IVector> expected = factory_vector->createVector(GetParam().dimension, GetParam().a);
+    expect_vector_near(*v1, *expected);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AssignmentTests,
+    AssignmentTestVector,
+    ::testing::Values(
+        VectorParams{1, 5.0, 6.0, 0.0},
+        VectorParams{7, 3.0, 4.0, 0.0},
+        VectorParams{16, 1.5, 2.5, 0.0},
+        VectorParams{1000, 2.0, 3.0, 0.0}
+    )
+);
+
+// NOTE: same assumption as above — adjust if operator= is meant to
+// silently no-op or resize instead of throwing on a dimension mismatch.
+TEST(AssignmentEdgeTest, DimensionMismatchThrows) {
+    auto a = factory_vector->createVector(4, 1.0);
+    auto b = factory_vector->createVector(5, 1.0);
+    EXPECT_THROW(*a = *b, std::invalid_argument);
+}
+TEST_P(ArithmeticOperationTestVector, CompoundVectorAddition) {
+    auto p = GetParam();
+    IVector& ref = (*v1) += (*v2);
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a + p.b);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get()); // should return *this, not a copy
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundVectorSubtraction) {
+    auto p = GetParam();
+    IVector& ref = (*v1) -= (*v2);
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a - p.b);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get());
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundScalarAddition) {
+    auto p = GetParam();
+    IVector& ref = (*v1) += p.scalar;
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a + p.scalar);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get());
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundScalarSubtraction) {
+    auto p = GetParam();
+    IVector& ref = (*v1) -= p.scalar;
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a - p.scalar);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get());
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundScalarMultiply) {
+    auto p = GetParam();
+    IVector& ref = (*v1) *= p.scalar;
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a * p.scalar);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get());
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundScalarDivision) {
+    auto p = GetParam();
+    if (std::abs(p.scalar) < 1e-10) {
+        GTEST_SKIP() << "Skipping division by zero case";
+    }
+    IVector& ref = (*v1) /= p.scalar;
+
+    unique_ptr<IVector> expected = factory_vector->createVector(p.dimension, p.a / p.scalar);
+    expect_vector_near(*v1, *expected);
+    EXPECT_EQ(&ref, v1.get());
+}
+
+TEST_P(ArithmeticOperationTestVector, CompoundDimensionMismatchThrows) {
+    unique_ptr<IVector> other = factory_vector->createVector(GetParam().dimension + 1, 1.0);
+    EXPECT_THROW((*v1) += *other, std::invalid_argument);
+    EXPECT_THROW((*v1) -= *other, std::invalid_argument);
+}
