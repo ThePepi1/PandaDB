@@ -23,6 +23,8 @@ namespace data {
         IVector& operator/= (double scalar) override;
         IVector& operator+= (double scalar) override;
         IVector& operator-= (double scalar) override;
+        bool operator==(const IVector& other) override;
+        void operator=(const IVector& other) override; 
         double norm() const override;
         std::unique_ptr<IVector> normalize() const override;
     };

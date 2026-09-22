@@ -36,15 +36,18 @@ namespace data {
         virtual IVector& operator/= (double scalar) = 0;
         virtual IVector& operator+= (double scalar) = 0;
         virtual IVector& operator-= (double scalar) = 0;
+        virtual bool operator==(const IVector& other) = 0;
+        virtual void operator=(const IVector& other) = 0;
+        bool operator!=(const IVector& other) ;
         double* Data() const;
         size_t Dimension() const;
         bool Owner() const;
         void Disown();
         friend std::ostream& operator<<(std::ostream& stream, IVector& matrix);
         friend std::istream& operator>>(std::istream& stream, IVector& matrix);
-        friend file::fileReaderWriter& operator<<(file::fileReaderWriter& stream, IVector& matrix);
+        friend file::fileReaderWriter& operator<<(file::fileReaderWriter& stream, const IVector& matrix);
         friend file::fileReader& operator>>(file::fileReader& stream, IVector& matrix);
-        friend file::fileReaderWriter& operator>>(file::fileReaderWriter& stream, const IVector& matrix);
+        friend file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& matrix);
     };
 }
 

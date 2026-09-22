@@ -48,6 +48,10 @@ add_library(panda_lib
         KMeans/CodeBooks/includes/codeBook.h
         Data/VectorStream/includes/IVectorStream.h
         KMeans/CodeBooks/src/codeBook.cpp
+        KMeans/CodeBooks/includes/productquntizier.h
+        KMeans/CodeBooks/includes/trainer.h
+        KMeans/CodeBooks/src/productquntizier.cpp
+        KMeans/CodeBooks/src/trainer.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

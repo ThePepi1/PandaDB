@@ -59,7 +59,7 @@ namespace data {
     void IVector::Disown() {
         this->owner = false;
     }
-    file::fileReaderWriter& operator<<(file::fileReaderWriter& stream, IVector& vector) {
+    file::fileReaderWriter& operator<<(file::fileReaderWriter& stream, const IVector& vector) {
         stream << vector.dimension; 
         for (size_t i = 0; i < vector.dimension; i++) {
             stream << vector.Data()[i];
@@ -79,11 +79,14 @@ namespace data {
         }
         return stream;
     }
-    file::fileReaderWriter& operator>>(file::fileReaderWriter& stream, const IVector& vector) {
+    file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& vector) {
         stream << vector.dimension; 
         for (size_t i = 0; i < vector.dimension; i++) {
             stream << vector.Data()[i];
         }
         return stream;
+    }
+    bool IVector::operator!=(const IVector& other) {
+            return !(*this == other);
     }
 }

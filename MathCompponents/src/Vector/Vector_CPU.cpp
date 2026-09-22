@@ -229,6 +229,26 @@ namespace data {
             *thisData -= scalar;
         return *this;
     }
+    bool Vector_CPU::operator==(const IVector &other) {
+        if (dimension != other.Dimension())
+            return false;
+        double *thisData = Data();
+        double *otherData = other.Data();
+        for (size_t i = 0; i < dimension; ++i, ++thisData, ++otherData) {
+            if (std::abs(*thisData - *otherData) > 1e-12)
+                return false;
+        }
+        return true;
+    }
+    void Vector_CPU::operator=(const IVector &other) {
+        if (dimension != other.Dimension())
+            throw std::invalid_argument("Dimension mismatch");
+        double *thisData = Data();
+        double *otherData = other.Data();
+        for (size_t i = 0; i < dimension; ++i, ++thisData, ++otherData) {
+            *thisData = *otherData;
+        }
+    }
 
 }
 
