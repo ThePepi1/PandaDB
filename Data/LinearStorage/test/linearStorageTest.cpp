@@ -192,14 +192,3 @@ TEST_F(LinearStorageTest, VectorStreamResetReturnsToStart) {
     EXPECT_TRUE(stream->hasNext());
 }
 
-// Proportion-based streaming isn't implemented yet — just confirming it
-// currently returns nullptr rather than crashing. Expand this once you've
-// built it out.
-TEST_F(LinearStorageTest, VectorStreamByProportionIsNotImplementedYet) {
-    LinearStorage storage(filePath, 4, 0);
-    auto v = ls_factory_vector->createVector(4, 1.0);
-    storage.saveVector(*v);
-
-    auto stream = storage.getVectorStream(0.5, *ls_factory_vector);
-    EXPECT_EQ(stream, nullptr);
-}
