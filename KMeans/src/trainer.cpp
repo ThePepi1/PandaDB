@@ -1,6 +1,6 @@
 #include "../includes/trainer.h"
 #include "Vector/IVector.h"
-
+#include <iostream>
 namespace KMeans{ 
     void Trainer::train(CodeBook& codeBook, DataStructures::IVectorStream& stream, const metrics::IMetrics& metrics, int maxIterations) {
         for (int iteration = 0; iteration < maxIterations; ++iteration) {
@@ -53,8 +53,8 @@ namespace KMeans{
                 continueTraining[i] = true;
             }
         bool continueCodeBookTraining = true;
-        
         for (int iteration = 0; iteration < maxIterations; ++iteration) {
+            auto startTime = std::chrono::high_resolution_clock::now();
             stream.reset();
             bool allConverged = true;
             while(stream.hasNext()) {
@@ -82,6 +82,9 @@ namespace KMeans{
                 continueCodeBookTraining = codeBook.updateAverages();
             }
             allConverged = allConverged && !continueCodeBookTraining;
+            auto endTime = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsedTime = endTime - startTime;
+            std::cout << "Iteration " << iteration + 1 << " completed in " << elapsedTime.count() << " seconds." << std::endl; 
             if (allConverged) {
                 break; // All codebooks and the main codebook have converged
             }

@@ -15,7 +15,8 @@ namespace KMeans {
             for (int j = 0; j < dim; ++j) {
                 (*centroids[i])(j) = dist(rng); // Initialize to random values
             }
-        }   
+        }
+        counts.resize(size, 0);   
     }
     CodeBook::CodeBook(int size, int dim, data::FactoryVector& factory, bool generate) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
         if (generate) {

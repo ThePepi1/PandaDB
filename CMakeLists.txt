@@ -47,7 +47,7 @@ add_library(panda_lib
         File/test/fileTest.cpp
         KMeans/includes/codeBook.h
         Data/VectorStream/includes/IVectorStream.h
-        KMeans/includes/codeBook.h
+        KMeans/src/codeBook.cpp
         KMeans/includes/productquntizier.h
         KMeans/includes/trainer.h
         KMeans/src/productquntizier.cpp
@@ -93,3 +93,19 @@ target_link_libraries(PandaDB_tests
 )
 include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)
+
+add_executable(PandaDB_long_tests
+        KMeans/test/loadTest.cpp
+)
+target_link_libraries(PandaDB_long_tests
+        PRIVATE
+        panda_lib
+        GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(PandaDB_tests)
+gtest_discover_tests(PandaDB_long_tests
+        PROPERTIES LABELS "long"
+        DISCOVERY_TIMEOUT 600
+)
