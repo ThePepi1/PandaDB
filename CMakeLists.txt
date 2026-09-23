@@ -56,6 +56,8 @@ add_library(panda_lib
         Data/LinearStorage/src/linearStorage.cpp
         Data/VectorStream/includes/IVectorReaderStream.h
         Data/VectorStream/src/IVectorReaderStream.cpp
+        Data/VectorStream/includes/IVectorLoadStream.h
+        Data/VectorStream/src/IVectorLoadStream.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

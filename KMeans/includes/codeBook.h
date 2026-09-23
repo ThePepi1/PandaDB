@@ -17,7 +17,7 @@ namespace KMeans {
         std::vector<std::unique_ptr<data::IVector>> centroids;
         std::vector<std::unique_ptr<data::IVector>> averages;
         std::vector<long long> counts;
-        std::mutex mtx;
+        std::vector<std::mutex> centroidMutexes ;
     public:
         CodeBook(int size, int dim, data::FactoryVector& factory);
         CodeBook(int size, int dim, data::FactoryVector& factory, bool generate);

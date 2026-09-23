@@ -31,13 +31,15 @@ protected:
 
 TEST_F(ProductQuantizerTrainPerfTest, TrainSpeedOn1MVectors) {
     data::FactoryVectorCPU factory = data::FactoryVectorCPU();
-    auto stream = storage->getVectorStream(factory); // ceo fajl, od 0 do size
-    KMeans::ProductQuantizer pq(8, 256, stream->getDim(), factory);
-    KMeans::CodeBook codeBook( 256, stream->getDim(), factory);
+     // ceo fajl, od 0 do size
+    
     auto metrics = metrics::MetricFactory::instance().create_metric("euclide");
     constexpr int kMaxIterations = 20;
     auto trianer = KMeans::Trainer();
     auto start = std::chrono::high_resolution_clock::now();
+    auto stream = storage->getVectorStream(1.0, factory);// 1.0 means the whole stream
+    KMeans::ProductQuantizer pq(8, 256, stream->getDim(), factory);
+    KMeans::CodeBook codeBook( 256, stream->getDim(), factory); 
     trianer.train(pq, codeBook, *stream, *metrics, kMaxIterations);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

@@ -17,6 +17,7 @@ namespace KMeans {
             }
         }
         counts.resize(size, 0);   
+        centroidMutexes = std::vector<std::mutex>(size); // Initialize mutexes for each centroid
     }
     CodeBook::CodeBook(int size, int dim, data::FactoryVector& factory, bool generate) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
         if (generate) {
@@ -35,6 +36,8 @@ namespace KMeans {
                 averages.push_back(factory.createVector(dim, 0.0));
             }
         }
+        
+        centroidMutexes = std::vector<std::mutex>(size); // Initialize mutexes for each centroid
         counts.resize(size, 0);
     }
     long long CodeBook::belongs(const data::IVector& vector, const metrics::IMetrics& metrics) const {
@@ -88,7 +91,7 @@ namespace KMeans {
     void CodeBook::fit(data::IVector& point, const metrics::IMetrics& metrics) {
         long long index = belongs(point, metrics);
         if (index >= 0 && index < coodeBookSize) {
-            std::lock_guard<std::mutex> lock(mtx);
+            std::lock_guard<std::mutex> lock(centroidMutexes[index]);
             (*averages[index]) += point;
             counts[index]++;
         }

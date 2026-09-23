@@ -17,5 +17,6 @@ namespace DataStructures {
             virtual std::shared_ptr<data::IVector> next() = 0; 
             virtual void reset() = 0;
             virtual int getDim() const = 0;
+            virtual long long getSize() const = 0;
     };
 }

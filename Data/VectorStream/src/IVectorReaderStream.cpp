@@ -29,4 +29,7 @@ namespace DataStructures {
     int IVectorReaderStream::getDim() const {
         return storage.getDim();
     }
+    long long IVectorReaderStream::getSize() const {
+        return end - start;
+    }
 }

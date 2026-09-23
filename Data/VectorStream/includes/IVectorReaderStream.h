@@ -18,6 +18,7 @@ namespace DataStructures {
         std::shared_ptr<data::IVector> next() override;
         void reset() override;
         int getDim() const override;
+        long long getSize() const override;
 
     };
 }

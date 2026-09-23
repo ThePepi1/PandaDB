@@ -1,6 +1,7 @@
 #include "../includes/linearStorage.h"
 #include "../../File/includes/FileMenager.h"
 #include "../../VectorStream/includes/IVectorReaderStream.h"
+#include "../../VectorStream/includes/IVectorLoadStream.h"
 #include <stdexcept>
 #include <memory>
 namespace DataStructures {
@@ -84,7 +85,8 @@ namespace DataStructures {
         return std::make_unique<IVectorReaderStream>(dim, start, end, *this, factory);
     }
     std::unique_ptr<IVectorStream> LinearStorage::getVectorStream(double proportion, data::FactoryVector & factory) const {
-        return nullptr;    
+        long long end = static_cast<long long>(size * proportion);
+        return std::make_unique<IVectorLoadStream>(0, end, *getVectorStream(0,end, factory));   
     }
 
 }
