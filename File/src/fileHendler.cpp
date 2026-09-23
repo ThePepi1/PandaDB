@@ -111,7 +111,7 @@ void file::fileReader::findEnd() {
     }
 
     // Search backwards for the last occurrence of EndMarker
-    for (size_t i =bytesRead - config::EndMarkerSize;i >= 0; --i) {
+    for (long long i =bytesRead - config::EndMarkerSize;i >= 0; --i) {
 
         if (std::memcmp(temp + i,config::EndMarker, config::EndMarkerSize) == 0) {
             fileSize = offset + i;
