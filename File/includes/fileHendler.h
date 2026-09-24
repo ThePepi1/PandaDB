@@ -9,6 +9,7 @@ namespace file {
         protected :
             fileReader(const std::string& filePath) ;
             fileReader() = default;
+            fileReader(const std::string& filePath, bool createIfNotExists);
             virtual ~fileReader();  
             size_t head;
             size_t fileSize;
@@ -33,6 +34,7 @@ namespace file {
             long long operator>>(char* buffer);
             long long operator>>(long long& data);
             long long operator>>(double& data);
+            long long operator>>(size_t& data);
             struct Deleter {
                 void operator()(fileReader* reader) const;
             };
@@ -40,6 +42,7 @@ namespace file {
     class fileReaderWriter : public fileReader { 
         private :
             fileReaderWriter(const std::string& filePath);
+            
             bool dirty = false;
             bool sizeGrew = false;
             bool LoadBlock(long long block) override;
@@ -50,6 +53,7 @@ namespace file {
             struct Deleter {
                 void operator()(fileReaderWriter* reader) const;
             };
+            long long operator <<(size_t data);
             long long operator<<(int data);
             long long operator<<(const char* buffer);
             long long operator<<(const std::string& buffer); 

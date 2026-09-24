@@ -17,7 +17,6 @@ std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::
     auto it = std::unique_ptr<fileReader, fileReader::Deleter>(new fileReader(filePath)); // Need to check is there any issues here without using make_unique
     activeReaders[filePath]++;
     return it; // Need to check is there any issues here without using make_unique
-
 }
 std::unique_ptr<file::fileReader, file::fileReader::Deleter> file::FileMenager::subbscribeFileReader(const std::string& filePath) {
     std::unique_lock<std::mutex> lock(mtx);
