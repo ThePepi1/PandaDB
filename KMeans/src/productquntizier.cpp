@@ -1,7 +1,7 @@
 #include "../includes/productquntizier.h"
 #include <vector>
 namespace KMeans {
-ProductQuantizer::ProductQuantizer(int numSubspaces, int numCentroids, int dim, data::FactoryVector* factory)
+ProductQuantizer::ProductQuantizer(int numSubspaces, int numCentroids, int dim, data::FactoryVector & factory)
     : numSubspaces(numSubspaces), numCentroids(numCentroids), dim(dim), factory(factory) {
     for (int i = 0; i < numSubspaces - 1; ++i) {
         codeBooks.push_back(std::make_unique<CodeBook>(numCentroids, dim / numSubspaces, factory));
@@ -10,7 +10,7 @@ ProductQuantizer::ProductQuantizer(int numSubspaces, int numCentroids, int dim, 
     int lastSubspaceDim = dim - (dim / numSubspaces) * (numSubspaces - 1);
     codeBooks.push_back(std::make_unique<CodeBook>(numCentroids, lastSubspaceDim, factory));
 }
-ProductQuantizer::ProductQuantizer(data::FactoryVector * factory)
+ProductQuantizer::ProductQuantizer(data::FactoryVector & factory)
     : numSubspaces(0), numCentroids(0), dim(0), factory(factory) {}
 const CodeBook& ProductQuantizer::getCodeBook(int index) const {
     if (index < 0 || index >= numSubspaces) {
@@ -28,7 +28,7 @@ std::vector<long long> ProductQuantizer::quantize(const data::IVector& vector, c
         int startIdx = i * subspaceDim;
         int endIdx = (i == numSubspaces - 1) ? dim : startIdx + subspaceDim;
         // Create a subvector for the current subspace it dont dellete double bcs subvector dont have ownership of data
-        std::unique_ptr<data::IVector> subVector = factory->createVector(endIdx - startIdx, vector[startIdx]);
+        std::unique_ptr<data::IVector> subVector = factory.createVector(endIdx - startIdx, vector[startIdx]);
         long long index = codeBooks[i]->belongs(*subVector, metrics);
         quantizedIndices.push_back(index);
     }

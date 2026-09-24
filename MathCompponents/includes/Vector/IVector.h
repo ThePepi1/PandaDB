@@ -48,6 +48,7 @@ namespace data {
         friend file::fileReaderWriter& operator<<(file::fileReaderWriter& stream, const IVector& matrix);
         friend file::fileReader& operator>>(file::fileReader& stream, IVector& matrix);
         friend file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& matrix);
+        static size_t getSizeInBytes(size_t dimension);
     };
 }
 

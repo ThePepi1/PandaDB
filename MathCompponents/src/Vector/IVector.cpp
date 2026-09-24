@@ -89,4 +89,7 @@ namespace data {
     bool IVector::operator!=(const IVector& other) {
             return !(*this == other);
     }
+    size_t IVector::getSizeInBytes(size_t dimension) {
+        return sizeof(size_t) + dimension * sizeof(double);
+    }
 }

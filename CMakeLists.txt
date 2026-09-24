@@ -45,13 +45,19 @@ add_library(panda_lib
         Utils/config/Block/Block.h
         Utils/config/Block/BLock.cpp
         File/test/fileTest.cpp
-        KMeans/CodeBooks/includes/codeBook.h
+        KMeans/includes/codeBook.h
         Data/VectorStream/includes/IVectorStream.h
-        KMeans/CodeBooks/src/codeBook.cpp
-        KMeans/CodeBooks/includes/productquntizier.h
-        KMeans/CodeBooks/includes/trainer.h
-        KMeans/CodeBooks/src/productquntizier.cpp
-        KMeans/CodeBooks/src/trainer.cpp
+        KMeans/src/codeBook.cpp
+        KMeans/includes/productquntizier.h
+        KMeans/includes/trainer.h
+        KMeans/src/productquntizier.cpp
+        KMeans/src/trainer.cpp
+        Data/LinearStorage/includes/linearStorage.h
+        Data/LinearStorage/src/linearStorage.cpp
+        Data/VectorStream/includes/IVectorReaderStream.h
+        Data/VectorStream/src/IVectorReaderStream.cpp
+        Data/VectorStream/includes/IVectorLoadStream.h
+        Data/VectorStream/src/IVectorLoadStream.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
@@ -80,6 +86,7 @@ add_executable(PandaDB_tests
         Data/FlatIndex/test/FlatIndex_test.cpp
         Algoritams/tests/searcher_test.cpp
         File/test/fileTest.cpp
+        Data/LinearStorage/test/linearStorageTest.cpp
 )
 target_link_libraries(PandaDB_tests
         PRIVATE
@@ -88,3 +95,19 @@ target_link_libraries(PandaDB_tests
 )
 include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)
+
+add_executable(PandaDB_long_tests
+        KMeans/test/loadTest.cpp
+)
+target_link_libraries(PandaDB_long_tests
+        PRIVATE
+        panda_lib
+        GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(PandaDB_tests)
+gtest_discover_tests(PandaDB_long_tests
+        PROPERTIES LABELS "long"
+        DISCOVERY_TIMEOUT 600
+)

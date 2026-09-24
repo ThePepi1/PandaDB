@@ -13,14 +13,14 @@ namespace KMeans {
     private:
         long long coodeBookSize;
         int codeBookDim;
-        data::FactoryVector* factory;
+        data::FactoryVector& factory;
         std::vector<std::unique_ptr<data::IVector>> centroids;
         std::vector<std::unique_ptr<data::IVector>> averages;
         std::vector<long long> counts;
-        std::mutex mtx;
+        std::vector<std::mutex> centroidMutexes ;
     public:
-        CodeBook(int size, int dim, data::FactoryVector* factory);
-        CodeBook(int size, int dim, data::FactoryVector* factory, bool generate);
+        CodeBook(int size, int dim, data::FactoryVector& factory);
+        CodeBook(int size, int dim, data::FactoryVector& factory, bool generate);
         /*
             idea behind not changing metics is that we are here saving centeroids u 
             could use difrent metrics for traning and fiting this just saves centeroids

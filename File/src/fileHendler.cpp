@@ -34,7 +34,7 @@ file::fileReader::~fileReader() {
     stream.close();
 }
 
-file::fileReaderWriter::fileReaderWriter(const std::string& filePath) : fileReader(filePath) {
+file::fileReaderWriter::fileReaderWriter(const std::string& filePath) : fileReader(filePath, true) {
 }
 bool file::fileReader::LoadBlock(long long block) {
     if (block == LoadedBlock) {
@@ -111,7 +111,7 @@ void file::fileReader::findEnd() {
     }
 
     // Search backwards for the last occurrence of EndMarker
-    for (size_t i =bytesRead - config::EndMarkerSize;i >= 0; --i) {
+    for (long long i =bytesRead - config::EndMarkerSize;i >= 0; --i) {
 
         if (std::memcmp(temp + i,config::EndMarker, config::EndMarkerSize) == 0) {
             fileSize = offset + i;
@@ -224,7 +224,7 @@ long long file::fileReader::operator>>(char* buffer) {
     return read(buffer, std::strlen(buffer));
 }
 long long file::fileReaderWriter::operator<<(int data) {
-    return write(reinterpret_cast<const char*>(&data), sizeof(long long));
+    return write(reinterpret_cast<const char*>(&data), sizeof(int));
 }
 long long file::fileReaderWriter::operator<<(double data) {
     return write(reinterpret_cast<const char*>(&data), sizeof(double));
@@ -250,4 +250,32 @@ long long file::fileReader::operator>>(size_t& data) {
 long long file::fileReaderWriter::operator<<(size_t data) {
     return write(reinterpret_cast<const char*>(&data), sizeof(size_t));
 }
-     
+file::fileReader::fileReader(
+    const std::string& filePath,bool createIfMissing)
+    : filePath(filePath),
+      head(0),
+      stream(){
+    if (createIfMissing && !std::filesystem::exists(filePath)) {
+        std::ofstream create(filePath, std::ios::binary);
+        if (!create) {
+            throw std::runtime_error(
+                "Failed to create file: " + filePath
+            );
+        }
+    }
+
+    stream.open(
+        filePath,
+        std::ios::binary |
+        std::ios::in |
+        std::ios::out
+    );
+
+    if (!stream.is_open()) {
+        throw std::runtime_error(
+            "Failed to open file: " + filePath
+        );
+    }
+
+    findEnd();
+}   

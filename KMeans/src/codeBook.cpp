@@ -6,34 +6,38 @@
 #include <algorithm>
 
 namespace KMeans {
-    CodeBook::CodeBook(int size, int dim, data::FactoryVector* factory) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
+    CodeBook::CodeBook(int size, int dim, data::FactoryVector& factory) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
         std::mt19937 rng{std::random_device{}()};
         std::uniform_real_distribution<double> dist(-1000, 1000);
         for (int i = 0; i < size; ++i) {
-            centroids.push_back(factory->createVector(dim));
-            averages.push_back(factory->createVector(dim, 0.0));
+            centroids.push_back(factory.createVector(dim));
+            averages.push_back(factory. createVector(dim, 0.0));
             for (int j = 0; j < dim; ++j) {
                 (*centroids[i])(j) = dist(rng); // Initialize to random values
             }
-        }   
+        }
+        counts.resize(size, 0);   
+        centroidMutexes = std::vector<std::mutex>(size); // Initialize mutexes for each centroid
     }
-    CodeBook::CodeBook(int size, int dim, data::FactoryVector* factory, bool generate) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
+    CodeBook::CodeBook(int size, int dim, data::FactoryVector& factory, bool generate) : coodeBookSize(size), codeBookDim(dim), factory(factory) {
         if (generate) {
             std::mt19937 rng{std::random_device{}()};
             std::uniform_real_distribution<double> dist(-1000, 1000);
             for (int i = 0; i < size; ++i) {
-                centroids.push_back(factory->createVector(dim));
-                averages.push_back(factory->createVector(dim, 0.0));
+                centroids.push_back(factory.createVector(dim));
+                averages.push_back(factory.createVector(dim, 0.0));
                 for (int j = 0; j < dim; ++j) {
                     (*centroids[i])(j) = dist(rng); // Initialize to random values
                 }
             }
         } else {
             for (int i = 0; i < size; ++i) {
-                centroids.push_back(factory->createVector(dim));
-                averages.push_back(factory->createVector(dim, 0.0));
+                centroids.push_back(factory.createVector(dim));
+                averages.push_back(factory.createVector(dim, 0.0));
             }
         }
+        
+        centroidMutexes = std::vector<std::mutex>(size); // Initialize mutexes for each centroid
         counts.resize(size, 0);
     }
     long long CodeBook::belongs(const data::IVector& vector, const metrics::IMetrics& metrics) const {
@@ -59,7 +63,7 @@ namespace KMeans {
         reader >> codeBook.codeBookDim; 
         codeBook.centroids.clear();
         for (long long i = 0; i < codeBook.coodeBookSize; ++i) {
-            std::unique_ptr<data::IVector> vec = codeBook.factory->createVector(codeBook.codeBookDim);
+            std::unique_ptr<data::IVector> vec = codeBook.factory.createVector(codeBook.codeBookDim);
             reader >> *vec;
             codeBook.centroids.push_back(std::move(vec));
         }
@@ -78,7 +82,7 @@ namespace KMeans {
         rw >> codeBook.codeBookDim;
         codeBook.centroids.clear(); 
         for (long long i = 0; i < codeBook.coodeBookSize; ++i) {
-            std::unique_ptr<data::IVector> vec = codeBook.factory->createVector();
+            std::unique_ptr<data::IVector> vec = codeBook.factory.createVector();
             rw >> *vec;
             codeBook.centroids.push_back(std::move(vec));
         }
@@ -87,7 +91,7 @@ namespace KMeans {
     void CodeBook::fit(data::IVector& point, const metrics::IMetrics& metrics) {
         long long index = belongs(point, metrics);
         if (index >= 0 && index < coodeBookSize) {
-            std::lock_guard<std::mutex> lock(mtx);
+            std::lock_guard<std::mutex> lock(centroidMutexes[index]);
             (*averages[index]) += point;
             counts[index]++;
         }
