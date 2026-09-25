@@ -84,7 +84,7 @@ namespace KMeans{
                         const int startIdx = i * (dim / numSubspaces);
                         const int endIdx = (i == numSubspaces - 1) ? dim : startIdx + (dim / numSubspaces);
 
-                        std::unique_ptr<data::IVector> subVector = pq.factory.createVector(endIdx - startIdx, (*point)[startIdx]);
+                        std::unique_ptr<data::IVector> subVector = pq.factory.createVector(endIdx - startIdx, (*point)[startIdx]); //ToDo Old implementation now better use clone
                         pq.codeBooks[i]->fit(*subVector, metrics);
                     }
 
