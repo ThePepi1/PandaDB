@@ -49,6 +49,7 @@ namespace data {
         friend file::fileReader& operator>>(file::fileReader& stream, IVector& matrix);
         friend file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& matrix);
         static size_t getSizeInBytes(size_t dimension);
+        virtual std::unique_ptr<IVector> clone(size_t start, size_t dimension) const = 0;
     };
 }
 
