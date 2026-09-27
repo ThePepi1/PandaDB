@@ -44,9 +44,9 @@ add_library(panda_lib
         File/src/fileHendler.cpp
         Utils/config/Block/Block.h
         Utils/config/Block/BLock.cpp
-        File/test/fileTest.cpp
         KMeans/includes/codeBook.h
-        Data/VectorStream/includes/IVectorStream.h
+        Data/VectorStream/includes/VectorStreams.h
+        Data/VectorStream/includes/IStream.h
         KMeans/src/codeBook.cpp
         KMeans/includes/productquntizier.h
         KMeans/includes/trainer.h
@@ -54,14 +54,14 @@ add_library(panda_lib
         KMeans/src/trainer.cpp
         Data/LinearStorage/includes/linearStorage.h
         Data/LinearStorage/src/linearStorage.cpp
-        Data/VectorStream/includes/IVectorReaderStream.h
-        Data/VectorStream/src/IVectorReaderStream.cpp
-        Data/VectorStream/includes/IVectorLoadStream.h
-        Data/VectorStream/src/IVectorLoadStream.cpp
+        Data/LinearStorage/includes/linearStorageTraits.h
+        Data/VectorStream/includes/ReaderStream.h
+        Data/VectorStream/src/ReaderStream.cpp
+        Data/VectorStream/includes/LoadStream.h
+        Data/VectorStream/src/LoadStream.cpp
         Data/Vamana/includes/Vamana.h
         Data/Vamana/includes/Node.h
         Data/Vamana/src/Node.cpp
-        Data/Vamana/includes/TemplateStorage.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

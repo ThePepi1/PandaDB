@@ -250,7 +250,7 @@ namespace data {
             *thisData = *otherData;
         }
     }
-    std::unique_ptr<IVector> IVector::clone(size_t start, size_t dimension) const {
+    std::unique_ptr<IVector> Vector_CPU::clone(size_t start, size_t dimension) const {
         return std::make_unique<Vector_CPU>(dimension, Data() + start);
     }
 

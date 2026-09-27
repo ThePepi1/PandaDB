@@ -105,6 +105,7 @@ namespace data {
         data = new double[dimension];
         std::memcpy(data, buffer + sizeof(size_t), dimension * sizeof(double));
     }
+    
 }
 
 
