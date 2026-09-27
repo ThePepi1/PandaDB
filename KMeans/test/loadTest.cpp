@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "../../Data/LinearStorage/includes/linearStorage.h"
-#include "../../Data/VectorStream/includes/IVectorStream.h"
+#include "../../Data/VectorStream/includes/VectorStreams.h"
 #include "../includes/trainer.h"
 #include "../includes/Vector/FactoryVectorCPU.h"
 #include "../includes/productquntizier.h"
@@ -19,11 +19,11 @@ namespace {
 
 class ProductQuantizerTrainPerfTest : public ::testing::Test {
 protected:
-    std::unique_ptr<DataStructures::LinearStorage> storage;
+    std::unique_ptr<DataStructures::LinearVectorStorage> storage;
 
     void SetUp() override {
         
-        storage = std::make_unique<DataStructures::LinearStorage>(kBenchmarkFilePath);
+        storage = std::make_unique<DataStructures::LinearVectorStorage>(kBenchmarkFilePath);
         ASSERT_GT(storage->getSize(), 0) << "Fajl je prazan ili EndMarker nije pronadjen (findEnd() vratio 0).";
         metrics::register_builtin_metrics();    
     }

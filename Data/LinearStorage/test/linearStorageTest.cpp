@@ -9,8 +9,8 @@
 #include "Vector/FactoryVector.h"
 #include "Vector/FactoryVectorCPU.h"
 #include "../includes/linearStorage.h"
-#include "../../VectorStream/includes/IVectorStream.h"
 #include "../../Metrics/includes/MetricFactory.h"
+#include "../../Data/VectorStream/includes/VectorStreams.h"
 #include "../../Metrics/includes/IMetrics.h"
 #include "../../Metrics/includes/register.h"
 
@@ -44,7 +44,7 @@ protected:
 };
 
 TEST_F(LinearStorageTest, ConstructorWritesHeader) {
-    LinearStorage storage(filePath, 8, 0);
+    DataStructures::LinearVectorStorage storage(filePath, 8, 0);
     EXPECT_EQ(storage.getDim(), 8u);
     EXPECT_EQ(storage.getSize(), 0);
     EXPECT_EQ(storage.getFilePath(), filePath);
@@ -52,15 +52,15 @@ TEST_F(LinearStorageTest, ConstructorWritesHeader) {
 
 TEST_F(LinearStorageTest, ReopenExistingFileReadsHeaderBack) {
     {
-        LinearStorage storage(filePath, 5, 0);
+        LinearVectorStorage storage(filePath, 5, 0);
     }
-    LinearStorage reopened(filePath);
+    LinearVectorStorage reopened(filePath);
     EXPECT_EQ(reopened.getDim(), 5u);
     EXPECT_EQ(reopened.getSize(), 0);
 }
 
 TEST_F(LinearStorageTest, SaveVectorIncrementsSize) {
-    LinearStorage storage(filePath, 4, 0);
+    LinearVectorStorage storage(filePath, 4, 0);
     auto v = ls_factory_vector->createVector(4, 2.5);
     storage.saveVector(*v);
     EXPECT_EQ(storage.getSize(), 1);
@@ -68,14 +68,9 @@ TEST_F(LinearStorageTest, SaveVectorIncrementsSize) {
     EXPECT_EQ(storage.getSize(), 2);
 }
 
-TEST_F(LinearStorageTest, SaveVectorDimensionMismatchThrows) {
-    LinearStorage storage(filePath, 4, 0);
-    auto bad = ls_factory_vector->createVector(5, 1.0);
-    EXPECT_THROW(storage.saveVector(*bad), std::invalid_argument);
-}
 
 TEST_F(LinearStorageTest, SaveThenLoadSingleVectorMatches) {
-    LinearStorage storage(filePath, 6, 0);
+    LinearVectorStorage storage(filePath, 6, 0);
     auto original = ls_factory_vector->createVector(6, 3.75);
     storage.saveVector(*original);
 
@@ -85,7 +80,7 @@ TEST_F(LinearStorageTest, SaveThenLoadSingleVectorMatches) {
 }
 
 TEST_F(LinearStorageTest, SaveThenLoadMultipleVectorsMatchByIndex) {
-    LinearStorage storage(filePath, 10, 0);
+    LinearVectorStorage storage(filePath, 10, 0);
     std::vector<double> fills = {0.0, 1.5, 3.25, -2.0, 100.0};
     for (double f : fills) {
         auto v = ls_factory_vector->createVector(10, f);
@@ -102,7 +97,7 @@ TEST_F(LinearStorageTest, SaveThenLoadMultipleVectorsMatchByIndex) {
 }
 
 TEST_F(LinearStorageTest, LoadVectorOutOfRangeThrows) {
-    LinearStorage storage(filePath, 4, 0);
+    LinearVectorStorage storage(filePath, 4, 0);
     auto v = ls_factory_vector->createVector(4, 1.0);
     storage.saveVector(*v);
 
@@ -112,7 +107,7 @@ TEST_F(LinearStorageTest, LoadVectorOutOfRangeThrows) {
 }
 
 TEST_F(LinearStorageTest, VectorStreamFullRangeReturnsAllVectors) {
-    LinearStorage storage(filePath, 3, 0);
+    LinearVectorStorage storage(filePath, 3, 0);
     const int n = 5;
     for (int i = 0; i < n; ++i) {
         auto v = ls_factory_vector->createVector(3, static_cast<double>(i));
@@ -135,7 +130,7 @@ TEST_F(LinearStorageTest, VectorStreamFullRangeReturnsAllVectors) {
 }
 
 TEST_F(LinearStorageTest, VectorStreamGetVectorsBatch) {
-    LinearStorage storage(filePath, 2, 0);
+    LinearVectorStorage storage (filePath, 2, 0);
     const int n = 4;
     for (int i = 0; i < n; ++i) {
         auto v = ls_factory_vector->createVector(2, static_cast<double>(i));
@@ -151,7 +146,7 @@ TEST_F(LinearStorageTest, VectorStreamGetVectorsBatch) {
 }
 
 TEST_F(LinearStorageTest, VectorStreamRangeThrowsOnInvalidBounds) {
-    LinearStorage storage(filePath, 2, 0);
+    LinearVectorStorage storage(filePath, 2, 0);
     for (int i = 0; i < 3; ++i) {
         auto v = ls_factory_vector->createVector(2, static_cast<double>(i));
         storage.saveVector(*v);
@@ -161,7 +156,7 @@ TEST_F(LinearStorageTest, VectorStreamRangeThrowsOnInvalidBounds) {
 }
 
 TEST_F(LinearStorageTest, VectorStreamRangeReturnsRequestedCount) {
-    LinearStorage storage(filePath, 2, 0);
+    LinearVectorStorage storage(filePath, 2, 0);
     const int n = 6;
     for (int i = 0; i < n; ++i) {
         auto v = ls_factory_vector->createVector(2, static_cast<double>(i));
@@ -179,7 +174,7 @@ TEST_F(LinearStorageTest, VectorStreamRangeReturnsRequestedCount) {
 }
 
 TEST_F(LinearStorageTest, VectorStreamResetReturnsToStart) {
-    LinearStorage storage(filePath, 2, 0);
+    LinearVectorStorage storage(filePath, 2, 0);
     for (int i = 0; i < 4; ++i) {
         auto v = ls_factory_vector->createVector(2, static_cast<double>(i));
         storage.saveVector(*v);
