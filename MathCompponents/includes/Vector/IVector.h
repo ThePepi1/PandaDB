@@ -50,6 +50,8 @@ namespace data {
         friend file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& matrix);
         static size_t getSizeInBytes(size_t dimension);
         virtual std::unique_ptr<IVector> clone(size_t start, size_t dimension) const = 0;
+        void serialize(char* buffer) const;
+        void deserialize(const char* buffer);
     };
 }
 

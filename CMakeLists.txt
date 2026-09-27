@@ -58,6 +58,10 @@ add_library(panda_lib
         Data/VectorStream/src/IVectorReaderStream.cpp
         Data/VectorStream/includes/IVectorLoadStream.h
         Data/VectorStream/src/IVectorLoadStream.cpp
+        Data/Vamana/includes/Vamana.h
+        Data/Vamana/includes/Node.h
+        Data/Vamana/src/Node.cpp
+        Data/Vamana/includes/TemplateStorage.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

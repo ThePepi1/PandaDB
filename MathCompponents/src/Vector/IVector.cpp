@@ -1,6 +1,7 @@
 #include "../../includes/Vector/IVector.h"
 #include <stdexcept>
 #include <iostream>
+#include <cstring>
 
 namespace data {
     IVector::IVector(std::size_t dimension): dimension(dimension) {
@@ -92,4 +93,18 @@ namespace data {
     size_t IVector::getSizeInBytes(size_t dimension) {
         return sizeof(size_t) + dimension * sizeof(double);
     }
+    void IVector::serialize(char* buffer) const {
+        std::memcpy(buffer, &dimension, sizeof(size_t));
+        std::memcpy(buffer + sizeof(size_t), data, dimension * sizeof(double));
+    }
+    void IVector::deserialize(const char* buffer) {
+        std::memcpy(&dimension, buffer, sizeof(size_t));
+        if (data != nullptr && owner) {
+            delete[] data;
+        }
+        data = new double[dimension];
+        std::memcpy(data, buffer + sizeof(size_t), dimension * sizeof(double));
+    }
 }
+
+

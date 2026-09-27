@@ -59,6 +59,7 @@ namespace file {
             long long operator<<(const std::string& buffer); 
             long long operator<<(long long data);
             long long operator<<(double data);
+            
 
             friend class FileMenager;
             
