@@ -63,6 +63,7 @@ add_library(panda_lib
         Data/Vamana/includes/Node.h
         Data/Vamana/src/Node.cpp
         Data/VectorStream/includes/NodeStream.h
+        Data/Space/includes/metadata.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

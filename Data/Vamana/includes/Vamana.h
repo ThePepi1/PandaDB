@@ -7,6 +7,7 @@
 #include "../../Data/LinearStorage/includes/linearStorage.h"
 #include "../../KMeans/includes/codeBook.h"
 #include "../../Data/VectorStream/includes/NodeStream.h"
+#include "../../Data/Space/includes/metadata.h"
 
 namespace DataStructures{
     class Vamana{ 
@@ -14,11 +15,11 @@ namespace DataStructures{
         public:
         std::vector<std::unique_ptr<data::IVector>> search(const data::IVector& query, 
             const KMeans::ProductQuantizer &pq, std::vector<std::vector<long long>>& codebookAssignments,
-            const data::FactoryVector &factory, size_t K);
+            const data::FactoryVector &factory, size_t K, const Metadata &metadata);
         std::string merge(std::vector<std::string> &files);
         bool buildIndex(LinearStorage<data::IVector> &storage, const KMeans::CodeBook &codebook, const KMeans::ProductQuantizer &pq , 
-        std::vector<std::vector<long long>> &codebookAssignments, const data::FactoryVector &factory);
+        std::vector<std::vector<long long>> &codebookAssignments, const data::FactoryVector &factory, const Metadata &metadata);
         bool add(data::IVector &vector, const KMeans::ProductQuantizer &pq, 
-            std::vector<std::vector<long long>>& codebookAssignments,const data::FactoryVector &factory);
+            std::vector<std::vector<long long>>& codebookAssignments,const data::FactoryVector &factory, const Metadata &metadata);
     };
 }
