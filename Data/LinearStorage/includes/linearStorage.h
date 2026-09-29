@@ -34,6 +34,11 @@ class LinearStorage {
         std::unique_ptr<IStream<T>> getVectorStream(FactoryType& factory) const;
         std::unique_ptr<IStream<T>> getVectorStream(size_t startIndex, size_t endIndex, FactoryType& factory) const;
         std::unique_ptr<IStream<T>> getVectorStream(double proportion, FactoryType& factory) const;
-};
+        std::vector<std::unique_ptr<T>> loadBeam(
+            const std::vector<long long>& indices, 
+            FactoryType* factory, 
+            size_t extra = 0
+        ) const;
+    };
 
 }

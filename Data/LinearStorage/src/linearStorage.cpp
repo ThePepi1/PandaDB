@@ -4,6 +4,7 @@
 #include "../../Data/VectorStream/includes/LoadStream.h"
 #include <stdexcept>
 #include <memory>
+#include <vector>
 
 namespace DataStructures {
 
@@ -108,7 +109,60 @@ namespace DataStructures {
         long long end = static_cast<long long>(size * proportion);
         return std::make_unique<LoadStream<T>>(0, end, *getVectorStream(0, end, factory));
     }
+    template<typename T>
+    std::vector<std::unique_ptr<T>> LinearStorage<T>::loadBeam(
+        const std::vector<long long>& indices, 
+        FactoryType* factory,
+        size_t extra
+    ) const 
+    {
+        const size_t numIndices = indices.size();
+        std::vector<std::unique_ptr<T>> result;
+        if (numIndices == 0) return result;
 
+        result.reserve(numIndices);
+
+        std::vector<char*> buffers(numIndices);
+        std::vector<size_t> positions(numIndices);
+        std::vector<size_t> sizes(numIndices);
+
+        const size_t recordSizeBytes = Traits::recordSize(dim, extra);
+
+        for (size_t i = 0; i < numIndices; ++i) {
+            long long idx = indices[i];
+            if (idx < 0 || idx >= size) {
+                throw std::out_of_range("Index out of bounds in loadBeam: " + std::to_string(idx));
+            }
+
+            // Allocate object memory depending on whether T is abstract or concrete
+            std::unique_ptr<T> itemPtr;
+            if constexpr (std::is_abstract<T>::value) {
+                if (!factory) {
+                    throw std::invalid_argument("Factory pointer required when loading abstract types (data::IVector).");
+                }
+                itemPtr = factory->createVector(dim);
+            } else {
+                itemPtr = std::make_unique<T>(extra, *factory);
+            }
+
+            buffers[i]   = reinterpret_cast<char*>(itemPtr.get());
+            positions[i] = static_cast<size_t>(getVectorOffset(idx));
+            sizes[i]     = recordSizeBytes;
+
+            result.push_back(std::move(itemPtr));
+        }
+
+        // Acquire file reader instance
+        auto reader = file::FileMenager::getInstance().subbscribeFileReader(filePath);
+        if (!reader) {
+            throw std::runtime_error("Failed to open file reader for beam search: " + filePath);
+        }
+
+        // Execute parallel async io_uring beam search
+        reader->beam(buffers, positions, sizes);
+
+        return result;
+    }
     // ---- Explicit instantiations ----
     template class LinearStorage<data::IVector>;
     template class LinearStorage<Node>;
