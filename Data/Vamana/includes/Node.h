@@ -13,8 +13,9 @@ namespace DataStructures{
     size_t id;    
     std::unique_ptr<data::IVector> Vector;
     std::vector<size_t> Neighbors; //FixedSize of Neighbours fast access to them for all in mine index :D
+    
     public:
-        Node(size_t id, std::unique_ptr<data::IVector> Vector);
+        Node(size_t id, std::unique_ptr<data::IVector> Vector, size_t neighborsSize);
         Node(size_t neighborsSize, data::FactoryVector& factory); 
         const size_t getId() const;
         const data::IVector& getVector() const;
@@ -23,7 +24,9 @@ namespace DataStructures{
         friend file::fileReaderWriter& operator>>(file::fileReaderWriter& file,  Node& node);
         friend file::fileReaderWriter& operator<<(file::fileReaderWriter& file, const Node& node);
         void serialize(char* buffer) const;
+        void setNeighbors(std::vector<size_t> neighbors);
         void deserialize(const char* buffer, data::FactoryVector& factory, size_t neighborsSize);
         static size_t getSerializedSize(size_t vectorSize, size_t neighborsSize);
+        void extend(Node& other);
     };
 }   

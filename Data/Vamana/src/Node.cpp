@@ -10,7 +10,7 @@ namespace DataStructures{
     const std::vector<size_t> & Node::getNeighbors() const {
         return this->Neighbors;
     }
-    Node::Node(size_t id, std::unique_ptr<data::IVector> Vector): id(id), Vector(std::move(Vector)) {}
+    Node::Node(size_t id, std::unique_ptr<data::IVector> Vector, size_t neighborsSize): id(id), Vector(std::move(Vector)), Neighbors(neighborsSize, 0) {}
 
     void Node::serialize(char* buffer) const {
         std::memcpy(buffer, &id, sizeof(size_t));
@@ -51,7 +51,12 @@ namespace DataStructures{
         }
         return file;
     }
+    void Node::extend(Node& other) {
+        this->Neighbors.insert(this->Neighbors.end(), other.Neighbors.begin(), other.Neighbors.end());
+    }
     Node::Node(size_t neighborsSize, data::FactoryVector& factory)
         : id(0), Vector(factory.createVector()), Neighbors(neighborsSize, 0) {}
-    
+    void DataStructures::Node::setNeighbors(std::vector<size_t> neighbors) {
+            this->Neighbors = std::move(neighbors);
+    }
 }

@@ -18,12 +18,14 @@ namespace DataStructures {
             }
             *writer << dim;
             *writer << size;
+            *writer << extra;
+            
             writer->commit();
     }
 
     template<typename T>
-    LinearStorage<T>::LinearStorage(const std::string& filePath, size_t extra)
-        : filePath(filePath), extra(extra) {
+    LinearStorage<T>::LinearStorage(const std::string& filePath, bool extra)
+        : filePath(filePath){
         file::FileMenager& menager = file::FileMenager::getInstance();
         auto reader = menager.subbscribeFileReader(filePath);
         if (!reader) {
@@ -32,6 +34,11 @@ namespace DataStructures {
         reader->seek(0);
         *reader >> dim;
         *reader >> size;
+        if(extra) {
+            *reader >> this->extra;
+        } else {
+            this->extra = 0;
+        }
     }
 
     template<typename T>
@@ -62,7 +69,7 @@ namespace DataStructures {
         *writer << (++size);
         if (commit) {
             writer->commit();
-        }
+        } 
         return *this;
     }
 
@@ -88,7 +95,7 @@ namespace DataStructures {
         if (index < 0 || index >= size) {
             throw std::out_of_range("Index out of range.");
         }
-        return sizeof(size_t) + sizeof(long long) + index * static_cast<long long>(Traits::recordSize(dim, extra));
+        return 2*sizeof(size_t) + sizeof(long long) + index * static_cast<long long>(Traits::recordSize(dim, extra));
     }
 
     template<typename T>
@@ -163,7 +170,24 @@ namespace DataStructures {
 
         return result;
     }
-    // ---- Explicit instantiations ----
+    template<typename T>
+    size_t LinearStorage<T>::getExtra() const {
+        return extra;
+    }
+    template<typename T>
+    LinearStorage<T>& LinearStorage<T>::overwriteVector(long long index, const T& item, bool commit) {
+        auto writer = file::FileMenager::getInstance().subbscribeFileReaderWriter(filePath);
+        if (!writer) {
+            throw std::runtime_error("Failed to open file for writing: " + filePath);
+        }
+        writer->seek(getVectorOffset(index));   // baca out_of_range ako je index loš
+        *writer << item;
+        if (commit) { 
+            writer->commit();
+        } 
+        return *this;
+    }
+    
     template class LinearStorage<data::IVector>;
     template class LinearStorage<Node>;
 

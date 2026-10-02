@@ -14,7 +14,7 @@
 
 namespace {
    
-    const std::string kBenchmarkFilePath = "/home/pepi/Documents/projects/PandaDB/downloadedDataTest/testVector.storage";
+    const std::string kBenchmarkFilePath = "/home/pepi/Documents/projects/PandaDB/downloadedDataTest/sift-128-euclidean.linstore";
 }
 
 class ProductQuantizerTrainPerfTest : public ::testing::Test {
@@ -35,17 +35,26 @@ TEST_F(ProductQuantizerTrainPerfTest, TrainSpeedOn1MVectors) {
     
     auto metrics = metrics::MetricFactory::instance().create_metric("euclide");
     constexpr int kMaxIterations = 20;
+        std::cerr << "A: pre streama\n";
     auto trianer = KMeans::Trainer();
     auto start = std::chrono::high_resolution_clock::now();
     auto stream = storage->getVectorStream(1.0, factory);// 1.0 means the whole stream
+        std::cerr << "B: stream gotov\n";
+
     KMeans::ProductQuantizer pq(8, 256, stream->getDim(), factory);
     KMeans::CodeBook codeBook( 256, stream->getDim(), factory); 
+        std::cerr << "C: pq i codebook gotovi\n";
+
     trianer.train(pq, codeBook, *stream, *metrics, kMaxIterations);
+        std::cerr << "D: train gotov\n";
+
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "train() nad " << storage->getSize() << " vektora (dim=" << storage->getDim()
               << "), maxIterations=" << kMaxIterations
               << " -> " << elapsedMs << " ms ("
               << (elapsedMs / 1000.0) << " s)\n";
+
     SUCCEED();
+        std::cerr << "E: kraj testa, sledi destrukcija\n";
 }
