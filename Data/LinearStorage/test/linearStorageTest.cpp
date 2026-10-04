@@ -54,7 +54,7 @@ TEST_F(LinearStorageTest, ReopenExistingFileReadsHeaderBack) {
     {
         LinearVectorStorage storage(filePath, 5, 0);
     }
-    LinearVectorStorage reopened(filePath);
+    LinearVectorStorage reopened(filePath, OpenMode::Read, false);
     EXPECT_EQ(reopened.getDim(), 5u);
     EXPECT_EQ(reopened.getSize(), 0);
 }

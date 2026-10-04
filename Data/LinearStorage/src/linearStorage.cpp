@@ -5,89 +5,33 @@
 #include <stdexcept>
 #include <memory>
 #include <vector>
+#include <string>
+#include <type_traits>
 
 namespace DataStructures {
 
+
     template<typename T>
-    LinearStorage<T>::LinearStorage(const std::string& filePath, size_t dim, long long size, size_t extra)
-        : filePath(filePath), dim(dim), extra(extra), size(size) {
-            file::FileMenager& menager = file::FileMenager::getInstance();
-            auto writer = menager.subbscribeFileReaderWriter(filePath);
-            if (!writer) {
-                throw std::runtime_error("Failed to open file for writing: " + filePath);
-            }
-            *writer << dim;
-            *writer << size;
-            *writer << extra;
-            
-            writer->commit();
+    file::fileReader& LinearStorage<T>::io() const {
+        if (mode == OpenMode::Write) return *writer;
+        return *reader;
     }
 
     template<typename T>
-    LinearStorage<T>::LinearStorage(const std::string& filePath, bool extra)
-        : filePath(filePath){
-        file::FileMenager& menager = file::FileMenager::getInstance();
-        auto reader = menager.subbscribeFileReader(filePath);
-        if (!reader) {
-            throw std::runtime_error("Failed to open file for reading: " + filePath);
-        }
-        reader->seek(0);
-        *reader >> dim;
-        *reader >> size;
-        if(extra) {
-            *reader >> this->extra;
-        } else {
-            this->extra = 0;
+    void LinearStorage<T>::requireWrite(const char* op) const {
+        if (mode != OpenMode::Write || !writer) {
+            throw std::logic_error(std::string(op) + " called on a read-only LinearStorage: " + filePath);
         }
     }
 
     template<typename T>
-    size_t LinearStorage<T>::getDim() const {
-        return dim;
-    }
-
-    template<typename T>
-    long long LinearStorage<T>::getSize() const {
-        return size;
-    }
-
-    template<typename T>
-    std::string LinearStorage<T>::getFilePath() const {
-        return filePath;
-    }
-
-    template<typename T>
-    LinearStorage<T>& LinearStorage<T>::saveVector(const T& item, bool commit) {
-        file::FileMenager& menager = file::FileMenager::getInstance();
-        auto writer = menager.subbscribeFileReaderWriter(filePath);
-        if (!writer) {
-            throw std::runtime_error("Failed to open file for writing: " + filePath);
-        }
-        writer->seek(writer->getFileSize());
-        *writer << item;
-        writer->seek(sizeof(size_t));
-        *writer << (++size);
-        if (commit) {
-            writer->commit();
-        } 
-        return *this;
-    }
-
-    template<typename T>
-    LinearStorage<T>& LinearStorage<T>::saveVector(const T& item) {
-        return saveVector(item, true);
-    }
-
-    template<typename T>
-    const LinearStorage<T>& LinearStorage<T>::loadVector(long long index, T& item) const {
-        auto reader = file::FileMenager::getInstance().subbscribeFileReader(filePath);
-        if (!reader) {
-            throw std::runtime_error("Failed to open file for reading: " + filePath);
-        }
-        long long offset = getVectorOffset(index);
-        reader->seek(offset);
-        *reader >> item;
-        return *this;
+    void LinearStorage<T>::writeHeader() {
+        writer->seek(0);
+        *writer << dim;
+        *writer << size;
+        *writer << extra;
+        headerDirty = false;
+        dirty = true;
     }
 
     template<typename T>
@@ -95,7 +39,115 @@ namespace DataStructures {
         if (index < 0 || index >= size) {
             throw std::out_of_range("Index out of range.");
         }
-        return 2*sizeof(size_t) + sizeof(long long) + index * static_cast<long long>(Traits::recordSize(dim, extra));
+        return 2 * sizeof(size_t) + sizeof(long long)
+               + index * static_cast<long long>(Traits::recordSize(dim, extra));
+    }
+
+
+    template<typename T>
+    LinearStorage<T>::LinearStorage(const std::string& filePath, size_t dim, long long size, size_t extra)
+        : filePath(filePath), mode(OpenMode::Write), dim(dim), extra(extra), size(size)
+    {
+        writer = file::FileMenager::getInstance().subbscribeFileReaderWriter(filePath);
+        if (!writer) {
+            throw std::runtime_error("Failed to open file for writing: " + filePath);
+        }
+        writeHeader();
+        commit();
+    }
+
+    template<typename T>
+    LinearStorage<T>::LinearStorage(const std::string& filePath, OpenMode mode, bool hasExtra)
+        : filePath(filePath), mode(mode)
+    {
+        auto& mgr = file::FileMenager::getInstance();
+
+        if (mode == OpenMode::Write) {
+            writer = mgr.subbscribeFileReaderWriter(filePath);
+            if (!writer) {
+                throw std::runtime_error("Failed to open file for writing: " + filePath);
+            }
+        } else {
+            reader = mgr.subbscribeFileReader(filePath);
+            if (!reader) {
+                throw std::runtime_error("Failed to open file for reading: " + filePath);
+            }
+        }
+
+        file::fileReader& f = io();
+        f.seek(0);
+        f >> dim;
+        f >> size;
+        if (hasExtra) {
+            f >> extra;
+        } else {
+            extra = 0;
+        }
+    }
+
+    template<typename T>
+    LinearStorage<T>::~LinearStorage() {
+        if (writer && (dirty || headerDirty)) {
+            try { commit(); } catch (...) {}   // never throw from a destructor
+        }
+    }
+
+
+    template<typename T>
+    size_t LinearStorage<T>::getDim() const { return dim; }
+
+    template<typename T>
+    size_t LinearStorage<T>::getExtra() const { return extra; }
+
+    template<typename T>
+    long long LinearStorage<T>::getSize() const { return size; }
+
+    template<typename T>
+    std::string LinearStorage<T>::getFilePath() const { return filePath; }
+
+
+    template<typename T>
+    LinearStorage<T>& LinearStorage<T>::saveVector(const T& item) {
+        requireWrite("saveVector");
+        writer->seek(writer->getFileSize());
+        *writer << item;
+        ++size;
+        headerDirty = true;   
+        dirty = true;
+        return *this;
+    }
+
+    template<typename T>
+    LinearStorage<T>& LinearStorage<T>::overwriteVector(long long index, const T& item) {
+        requireWrite("overwriteVector");
+        writer->seek(getVectorOffset(index));   
+        dirty = true;
+        return *this;
+    }
+
+    template<typename T>
+    void LinearStorage<T>::commit() {
+        requireWrite("commit");
+        if (headerDirty) {
+            writer->seek(sizeof(size_t));       
+            *writer << size;
+            headerDirty = false;
+            dirty = true;
+        }
+        if (dirty) {
+            writer->commit();
+            dirty = false;
+        }
+    }
+
+
+    template<typename T>
+    const LinearStorage<T>& LinearStorage<T>::loadVector(long long index, T& item) const {
+        const long long offset = getVectorOffset(index);   // throws before touching the file
+        file::fileReader& f = io();
+        f.seek(static_cast<size_t>(offset));
+        f >> item;
+        return *this;
     }
 
     template<typename T>
@@ -116,20 +168,25 @@ namespace DataStructures {
         long long end = static_cast<long long>(size * proportion);
         return std::make_unique<LoadStream<T>>(0, end, *getVectorStream(0, end, factory));
     }
+
     template<typename T>
     std::vector<std::unique_ptr<T>> LinearStorage<T>::loadBeam(
-        const std::vector<long long>& indices, 
+        const std::vector<long long>& indices,
         FactoryType* factory,
         size_t extra
-    ) const 
+    ) const
     {
         const size_t numIndices = indices.size();
         std::vector<std::unique_ptr<T>> result;
         if (numIndices == 0) return result;
 
+        if (!factory) {
+            throw std::invalid_argument("Factory pointer required in loadBeam.");
+        }
+
         result.reserve(numIndices);
 
-        std::vector<char*> buffers(numIndices);
+        std::vector<char*>  buffers(numIndices);
         std::vector<size_t> positions(numIndices);
         std::vector<size_t> sizes(numIndices);
 
@@ -141,12 +198,8 @@ namespace DataStructures {
                 throw std::out_of_range("Index out of bounds in loadBeam: " + std::to_string(idx));
             }
 
-            // Allocate object memory depending on whether T is abstract or concrete
             std::unique_ptr<T> itemPtr;
             if constexpr (std::is_abstract<T>::value) {
-                if (!factory) {
-                    throw std::invalid_argument("Factory pointer required when loading abstract types (data::IVector).");
-                }
                 itemPtr = factory->createVector(dim);
             } else {
                 itemPtr = std::make_unique<T>(extra, *factory);
@@ -159,35 +212,11 @@ namespace DataStructures {
             result.push_back(std::move(itemPtr));
         }
 
-        // Acquire file reader instance
-        auto reader = file::FileMenager::getInstance().subbscribeFileReader(filePath);
-        if (!reader) {
-            throw std::runtime_error("Failed to open file reader for beam search: " + filePath);
-        }
-
-        // Execute parallel async io_uring beam search
-        reader->beam(buffers, positions, sizes);
+        io().beam(buffers, positions, sizes);   
 
         return result;
     }
-    template<typename T>
-    size_t LinearStorage<T>::getExtra() const {
-        return extra;
-    }
-    template<typename T>
-    LinearStorage<T>& LinearStorage<T>::overwriteVector(long long index, const T& item, bool commit) {
-        auto writer = file::FileMenager::getInstance().subbscribeFileReaderWriter(filePath);
-        if (!writer) {
-            throw std::runtime_error("Failed to open file for writing: " + filePath);
-        }
-        writer->seek(getVectorOffset(index));   // baca out_of_range ako je index loš
-        *writer << item;
-        if (commit) { 
-            writer->commit();
-        } 
-        return *this;
-    }
-    
+
     template class LinearStorage<data::IVector>;
     template class LinearStorage<Node>;
 

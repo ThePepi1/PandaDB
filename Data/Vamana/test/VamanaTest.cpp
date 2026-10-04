@@ -22,8 +22,8 @@ namespace fs = std::filesystem;
 namespace {
     const std::string kBenchmarkFilePath =
         "/home/pepi/Documents/projects/PandaDB/downloadedDataTest/sift-128-euclidean.linstore";
-    constexpr double kStreamFraction = 0.2;   // lower it (e.g. 0.1) for quick runs
-    constexpr int kMaxIterations = 1;
+    constexpr double kStreamFraction = 1;   // lower it (e.g. 0.1) for quick runs
+    constexpr int kMaxIterations = 5;
 
     template <typename F>
     long long timeMs(F&& f) {
@@ -40,7 +40,7 @@ protected:
     fs::path workDir;
 
     void SetUp() override {
-        storage = std::make_unique<DataStructures::LinearVectorStorage>(kBenchmarkFilePath);
+        storage = std::make_unique<DataStructures::LinearVectorStorage>(kBenchmarkFilePath, DataStructures::OpenMode::Read, false);
         ASSERT_GT(storage->getSize(), 0);
         metrics::register_builtin_metrics();
 
@@ -65,7 +65,7 @@ TEST_F(VamanaBuildPerfTest, TrainQuantizeAndBuildIndex) {
     const auto dim = stream->getDim();
 
     KMeans::ProductQuantizer pq(8, 256, dim, factory);
-    KMeans::CodeBook codeBook(256, dim, factory);
+    KMeans::CodeBook codeBook(2, dim, factory);
     KMeans::Trainer trainer;
 
     auto trainMs = timeMs([&] { trainer.train(pq, codeBook, *stream, *metric, kMaxIterations); });
@@ -89,9 +89,9 @@ TEST_F(VamanaBuildPerfTest, TrainQuantizeAndBuildIndex) {
 
     long long count = 0;
     auto convertMs = timeMs([&] {
-        auto src = storage->getVectorStream(kStreamFraction, factory);
-        while (src->hasNext()) {
-            auto vec = src->next();                       // ADAPT: whatever your stream returns
+        stream->reset();
+        while (stream->hasNext()) {
+            auto vec = stream->next();                       // ADAPT: whatever your stream returns
             DataStructures::Node node = DataStructures::Node(count, vec->clone(0, vec->Dimension()),metadata.NeighborsSize); // ADAPT: Node constructor
             nodeStorage.saveVector(node);
             ++count;

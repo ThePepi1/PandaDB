@@ -23,7 +23,7 @@ protected:
 
     void SetUp() override {
         
-        storage = std::make_unique<DataStructures::LinearVectorStorage>(kBenchmarkFilePath);
+        storage = std::make_unique<DataStructures::LinearVectorStorage>(kBenchmarkFilePath, DataStructures::OpenMode::Read, false);
         ASSERT_GT(storage->getSize(), 0) << "Fajl je prazan ili EndMarker nije pronadjen (findEnd() vratio 0).";
         metrics::register_builtin_metrics();    
     }

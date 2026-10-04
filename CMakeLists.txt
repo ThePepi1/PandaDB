@@ -123,5 +123,4 @@ include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)
 gtest_discover_tests(PandaDB_long_tests
         PROPERTIES LABELS "long"
-        DISCOVERY_TIMEOUT 600
 )

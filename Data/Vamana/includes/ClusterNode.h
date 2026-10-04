@@ -13,9 +13,9 @@
 namespace DataStructures {
 
     inline constexpr std::size_t EMPTY_NEIGHBOR = std::numeric_limits<std::size_t>::max();
+
     class ClusterGraph {
     public:
-        struct Candidate { double dist; std::size_t id; };
         static ClusterGraph load(LinearStorage<Node>& storage, data::FactoryVector& factory, std::size_t slots);
 
         void save(LinearStorage<Node>& storage);
@@ -23,9 +23,9 @@ namespace DataStructures {
         void randomizeNeighbors(std::size_t R, std::optional<std::uint64_t> seed = std::nullopt);
         std::size_t size() const;
         std::size_t slots() const;
-        const std::vector<std::size_t>& ids() const;   
+        const std::vector<std::size_t>& ids() const;
         bool contains(std::size_t id) const;
-        Node& node(std::size_t id);                    
+        Node& node(std::size_t id);
         const Node& node(std::size_t id) const;
         double dist(std::size_t a, std::size_t b, metrics::IMetrics& distance) const;
         std::size_t findMedoid(std::size_t sampleSize, metrics::IMetrics& distance) const;
@@ -34,10 +34,8 @@ namespace DataStructures {
     private:
         ClusterGraph(std::size_t slots);
         std::size_t slots_;
-        std::vector<std::size_t> ids_;                  
-        std::unordered_map<std::size_t, Node> nodes_; 
-         std::vector<Candidate> greedySearch(std::size_t start, std::size_t target, std::size_t L, metrics::IMetrics& distance) const;
-        void robustPrune(std::size_t p, std::vector<Candidate> cand, double alpha, std::size_t Numb, metrics::IMetrics& distance);
+        std::vector<std::size_t> ids_;
+        std::unordered_map<std::size_t, Node> nodes_;
     };
 
 }
