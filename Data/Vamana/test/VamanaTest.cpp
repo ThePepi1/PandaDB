@@ -77,9 +77,9 @@ TEST_F(VamanaBuildPerfTest, TrainQuantizeAndBuildIndex) {
     metadata.NeighborsSize = 64;    // max out-degree stored per node
     metadata.R             = 32;    // initial random neighbours
     metadata.K             = 2;     // clusters each vector is assigned to
-    metadata.L             = 100;   // build search list size
+    metadata.L             = 50;   // build search list size
     metadata.alpha         = 1.2;
-    metadata.Ef            = 100;
+    metadata.Ef            = 50;
     metadata.beamSize      = 4;
 
     // ---- 3. Raw vectors -> LinearStorage<Node> ----
