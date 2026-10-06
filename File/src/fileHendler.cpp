@@ -282,69 +282,85 @@ file::fileReader::fileReader(
     findEnd();
 }   
 void file::fileReader::beam(std::vector<char*> &buffer, std::vector<size_t> &positionst, std::vector<size_t> &sizes) {
-    if(buffer.size() != positionst.size() || buffer.size() != sizes.size() || positionst.size() == 0) {
+    if (buffer.size() != positionst.size() || buffer.size() != sizes.size() || positionst.empty()) {
         throw std::invalid_argument("Buffer, positions, and sizes vectors must have the same size.");
     }
-    #ifdef __linux__
-    // Linux-specific implementation using io_uring for asynchronous I/O
+#ifdef __linux__
+    constexpr size_t ALIGN = 4096;
+    const size_t count = buffer.size();
 
-    int fd = open(filePath.c_str(), O_RDONLY | O_DIRECT);
-    if (fd < 0) {
-        fd = open(filePath.c_str(), O_RDONLY);
-        if (fd < 0) {
-            throw std::runtime_error("Failed to open file for io_uring: " + filePath);
-        }
-    }
-    struct io_uring ring;
-    if (io_uring_queue_init(static_cast<unsigned>(buffer.size()), &ring, 0) < 0) {
-        ::close(fd);
-        throw std::runtime_error("Failed to initialize io_uring ring instance.");
-    }
-    for (size_t i = 0; i < buffer.size(); ++i) {
-        struct io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-        if (!sqe) {
-            io_uring_queue_exit(&ring); 
-            ::close(fd);
-            throw std::runtime_error("Failed to get submission queue entry for io_uring.");
-        }        
-        io_uring_prep_read(sqe, fd, buffer[i], sizes[i], positionst[i]);
-        io_uring_sqe_set_data(sqe, buffer[i]);
+    // ---- fd (RAII) ----
+    struct Fd {
+        int v;
+        ~Fd() { if (v >= 0) ::close(v); }
+    } fd{ ::open(filePath.c_str(), O_RDONLY | O_DIRECT) };
+    if (fd.v < 0) {
+        fd.v = ::open(filePath.c_str(), O_RDONLY);
+        if (fd.v < 0) throw std::runtime_error("Failed to open file for io_uring: " + filePath);
     }
 
-    int submitted = io_uring_submit_and_wait(&ring, static_cast<unsigned>(buffer.size()));
+    // ---- ring (RAII) ----
+    struct Ring {
+        io_uring r;
+        bool ok = false;
+        ~Ring() { if (ok) io_uring_queue_exit(&r); }
+    } ring;
+    if (int rc = io_uring_queue_init(static_cast<unsigned>(count), &ring.r, 0); rc < 0) {
+        throw std::runtime_error("Failed to initialize io_uring: " + std::to_string(rc));
+    }
+    ring.ok = true;
+
+    // ---- poravnati privremeni baferi (O_DIRECT trazi poravnat offset, duzinu i adresu) ----
+    struct Req {
+        std::unique_ptr<char, void (*)(void*)> raw{nullptr, std::free};
+        size_t skip = 0;   // koliko bajtova od pocetka poravnatog bloka treba preskociti
+    };
+    std::vector<Req> reqs(count);
+
+    for (size_t i = 0; i < count; ++i) {
+        const size_t aPos = positionst[i] & ~(ALIGN - 1);
+        const size_t aEnd = (positionst[i] + sizes[i] + ALIGN - 1) & ~(ALIGN - 1);
+        reqs[i].skip = positionst[i] - aPos;
+        reqs[i].raw.reset(static_cast<char*>(std::aligned_alloc(ALIGN, aEnd - aPos)));
+        if (!reqs[i].raw) throw std::bad_alloc();
+
+        io_uring_sqe* sqe = io_uring_get_sqe(&ring.r);
+        if (!sqe) throw std::runtime_error("Failed to get submission queue entry for io_uring.");
+        io_uring_prep_read(sqe, fd.v, reqs[i].raw.get(), static_cast<unsigned>(aEnd - aPos), aPos);
+        io_uring_sqe_set_data64(sqe, i);
+    }
+
+    // ---- submit + wait: SVE kompletirano pre nego sto baferi izadju iz scope-a ----
+    int submitted = io_uring_submit_and_wait(&ring.r, static_cast<unsigned>(count));
     if (submitted < 0) {
-        io_uring_queue_exit(&ring); 
-        ::close(fd);
         throw std::runtime_error("Failed to submit io_uring operations: " + std::to_string(submitted));
     }
 
-    struct io_uring_cqe* cqe;
+    // ---- completions: kopiraj trazene bajtove u izlazne bafere ----
+    io_uring_cqe* cqe;
     unsigned head;
-    unsigned completedCount = 0;
-    bool hasError = false;
+    unsigned completed = 0;
     int errorCode = 0;
 
-    io_uring_for_each_cqe(&ring, head, cqe) {
-        completedCount++;
-        if (cqe->res < 0 && !hasError) {
-            hasError = true;
-            errorCode = cqe->res; // Kernel returns negative errno (e.g. -22 for alignment issues)
+    io_uring_for_each_cqe(&ring.r, head, cqe) {
+        ++completed;
+        const size_t i = static_cast<size_t>(io_uring_cqe_get_data64(cqe));
+        if (cqe->res < 0) {
+            if (!errorCode) errorCode = cqe->res;
+        } else if (static_cast<size_t>(cqe->res) < reqs[i].skip + sizes[i]) {
+            if (!errorCode) errorCode = -EIO;          // kratko citanje (iza kraja fajla)
+        } else {
+            std::memcpy(buffer[i], reqs[i].raw.get() + reqs[i].skip, sizes[i]);
         }
     }
-    io_uring_cq_advance(&ring, completedCount);
-    io_uring_queue_exit(&ring);
-    ::close(fd);
-    if (hasError) {
+    io_uring_cq_advance(&ring.r, completed);
+
+    if (errorCode) {
         throw std::runtime_error("io_uring read operation failed with kernel error code: " + std::to_string(errorCode));
     }
-    #else
-        /* 
-            Windows-specific implementation it will run multi threaded
-            reads from dipositsk it is havy on cpu but idk :D
-            for now it will just read the data secuentially but in the future it will be multi threaded
-        */
-        for(size_t i = 0; i < buffer.size(); i++) {
-            read(buffer[i], sizes[i], positionst[i]);
-        } 
-    #endif
+#else
+    for (size_t i = 0; i < buffer.size(); ++i) {
+        read(buffer[i], static_cast<long long>(sizes[i]), static_cast<long long>(positionst[i]));
+    }
+#endif
 }

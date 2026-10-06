@@ -100,11 +100,15 @@ add_executable(PandaDB_tests
         Algoritams/tests/searcher_test.cpp
         File/test/fileTest.cpp
         Data/LinearStorage/test/linearStorageTest.cpp
+        Data/Vamana/test/VamanaSearhTest.cpp
 )
+find_package(HDF5 REQUIRED COMPONENTS C)
+
 target_link_libraries(PandaDB_tests
         PRIVATE
         panda_lib
         GTest::gtest_main
+        HDF5::HDF5
 )
 include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)

@@ -13,7 +13,8 @@
 #include <queue>
 #include <filesystem>
 #include <iostream>
-
+#include "../../KMeans/includes/productquntizier.h"
+#include <algorithm>
 namespace DataStructures { 
 
     Vamana::Vamana(const std::string& filePath) : filePath(filePath) {}
@@ -67,7 +68,7 @@ namespace DataStructures {
         for (int i = 0; i < codebook.getSize(); ++i) {
             std::string tempFile = tempFilePath + "_cluster_" + std::to_string(i) + ".dump";
             tempFilePaths.push_back(tempFile);
-            tempStorages.emplace_back(new LinearNodeStorage(tempFile , metadata.vectorDim, 0, metadata.NeighborsSize));
+            tempStorages.emplace_back(new LinearNodeStorage(tempFile , metadata.vectorDim, 0, metadata.NeighborsSize / metadata.K));
         }
         std::unique_ptr<INodeStream> stream = storage.getVectorStream(factory);
         auto startTime = std::chrono::high_resolution_clock::now();
@@ -76,6 +77,7 @@ namespace DataStructures {
             std::vector<long long> assignments = codebook.belongs(node->getVector(), metric, metadata.K);
             for (long long clusterId : assignments) {
                 if (clusterId >= 0 && clusterId < codebook.getSize()) {
+                    node->setNeighbors(std::vector<std::size_t>(metadata.NeighborsSize / metadata.K , EMPTY_NEIGHBOR));
                     tempStorages[clusterId]->saveVector(*node);
                 }
             }
@@ -92,15 +94,15 @@ namespace DataStructures {
                 continue;
             } 
             auto startTime = std::chrono::high_resolution_clock::now();
-            auto g = ClusterGraph::load(*tempStorage, factory, metadata.NeighborsSize);
+            auto g = ClusterGraph::load(*tempStorage, factory, metadata.NeighborsSize/ metadata.K);
             std::cerr << "Building index for cluster file: " << tempStorage->getFilePath() << "with " << tempStorage->getSize() << " nodes." << std::endl; 
             g.randomizeNeighbors(metadata.R);
             std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - startTime;
             std::cerr << "Building index for cluster file: " << tempStorage->getFilePath() << " in " << elapsed.count() << " seconds." << std::endl;
-            g.buildPass(g.ids().front(), 1.0, metadata.NeighborsSize , metadata.L, metric); // For now i use first so i dont wast time on medoid search but if needed i can change it to it
+            g.buildPass(g.ids().front(), 1.0, metadata.NeighborsSize / metadata.K  , metadata.L, metric); // For now i use first so i dont wast time on medoid search but if needed i can change it to it
             std::chrono::duration<double> elapsed2 = std::chrono::high_resolution_clock::now() - startTime;
             std::cerr << "Finished first pass for cluster file: " << tempStorage->getFilePath() << " in " << elapsed2.count() << " seconds." << std::endl;
-            g.buildPass(g.ids().front(), metadata.alpha, metadata.NeighborsSize , metadata.L, metric);
+            g.buildPass(g.ids().front(), metadata.alpha, metadata.NeighborsSize / metadata.K , metadata.L, metric);
             std::chrono::duration<double> elapsed4 = std::chrono::high_resolution_clock::now() - startTime;
             std::cerr << "Finished second pass for cluster file: " << tempStorage->getFilePath() << " in " << elapsed4.count() << " seconds." << std::endl;
             g.save(*tempStorage);
@@ -126,73 +128,6 @@ namespace DataStructures {
         removeDumpFiles(filePath);
         return true;  
     }
-std::vector<std::unique_ptr<Node>> Vamana::search(
-    const data::IVector& query, const KMeans::ProductQuantizer& pq,
-    std::vector<std::vector<long long>>& codebookAssignments,
-    data::FactoryVector& factory, size_t K, const Metadata& metadata,
-    metrics::IMetrics& metric)
-    {
-        struct Cand { double dist; size_t id; bool expanded; };
-        auto byDist = [](const Cand& a, const Cand& b) { return a.dist < b.dist; };
-        const size_t n    = codebookAssignments.size();
-        const size_t L    = std::max<size_t>(metadata.Ef, K);
-        const size_t beam = std::max<size_t>(1, metadata.beamSize);
-
-        std::vector<std::unique_ptr<Node>> result;
-        if (n == 0 || K == 0) return result;
-
-
-        LinearNodeStorage storage(filePath + ".vamana", OpenMode::Read, false);
-        std::vector<Cand> pool;
-        pool.reserve(L + 1);
-        std::vector<std::pair<double, std::unique_ptr<Node>>> expanded;
-        std::vector<bool> seen(n, false);
-        const size_t startId = 0;   
-        seen[startId] = true;
-        pool.push_back({ metric.distance(codebookAssignments[startId], pq, query), startId, false });
-        while (true) {
-            std::vector<long long> ids;
-            for (auto& c : pool) {
-                if (c.expanded) continue;
-                c.expanded = true;
-                ids.push_back(static_cast<long long>(c.id));
-                if (ids.size() == beam) break;
-            }
-            if (ids.empty()) break;                       
-            auto nodes = storage.loadBeam(ids, &factory, metadata.NeighborsSize);
-            const size_t firstNew = expanded.size();
-            for (auto& node : nodes) {
-                const double exact = metric(node->getVector(), query);
-                const size_t id = static_cast<size_t>(node->getId());
-                for (auto& c : pool) {
-                    if (c.id == id) { c.dist = exact; break; }
-                }
-                expanded.emplace_back(exact, std::move(node));
-            }
-            std::sort(pool.begin(), pool.end(), byDist);
-            for (size_t e = firstNew; e < expanded.size(); ++e) {
-                for (size_t nb : expanded[e].second->getNeighbors()) {
-                    if (nb == EMPTY_NEIGHBOR || nb >= n || seen[nb]) continue;
-                    seen[nb] = true;
-
-                    const double d = metric.distance(codebookAssignments[nb], pq, query);
-                    if (pool.size() >= L && d >= pool.back().dist) continue;
-
-                    Cand c{ d, nb, false };
-                    pool.insert(std::upper_bound(pool.begin(), pool.end(), c, byDist), c);
-                    if (pool.size() > L) pool.pop_back();
-                }
-            }
-        }
-
-        std::sort(expanded.begin(), expanded.end(),
-                [](const auto& a, const auto& b) { return a.first < b.first; });
-        const size_t take = std::min(K, expanded.size());
-        result.reserve(take);
-        for (size_t i = 0; i < take; ++i)
-            result.push_back(std::move(expanded[i].second));
-        return result;
-    }
     void removeDumpFiles(const std::string& filePath) {
     namespace fs = std::filesystem;
 
@@ -205,7 +140,280 @@ std::vector<std::unique_ptr<Node>> Vamana::search(
         if (it->is_regular_file(rmEc) && it->path().extension() == ".dump")
             fs::remove(it->path(), rmEc);
     }
-}
-    
+} 
+bool Vamana::RobusePune(Node &node, data::FactoryVector &factory, const Metadata &metadata,
+                        LinearStorage<Node> &storage, metrics::IMetrics &metric) {
+    const std::size_t R = metadata.NeighborsSize;
+    const double alpha  = metadata.alpha;
 
+    struct Cand { double dist; std::size_t id; std::unique_ptr<Node> node; };
+    std::vector<Cand> cands;
+    std::unordered_set<std::size_t> seen;
+    seen.insert(node.getId());                       // ne sme sam sebi da bude sused
+
+    for (std::size_t nbId : node.getNeighbors()) {
+        if (nbId == EMPTY_NEIGHBOR || !seen.insert(nbId).second) continue;
+        auto nb = std::make_unique<Node>(metadata.NeighborsSize, factory);
+        storage.loadVector(static_cast<long long>(nbId), *nb);
+        const double d = metric(node.getVector(), nb->getVector());
+        cands.push_back({ d, nbId, std::move(nb) });
+    }
+
+    std::sort(cands.begin(), cands.end(),
+              [](const Cand& a, const Cand& b) { return a.dist < b.dist; });
+
+    std::vector<std::size_t> out;
+    std::vector<bool> removed(cands.size(), false);
+    for (std::size_t i = 0; i < cands.size() && out.size() < R; ++i) {
+        if (removed[i]) continue;
+        out.push_back(cands[i].id);                  // p* = najblizi preostali
+        for (std::size_t j = i + 1; j < cands.size(); ++j) {
+            if (removed[j]) continue;
+            if (alpha * metric(cands[i].node->getVector(), cands[j].node->getVector())
+                    <= cands[j].dist)
+                removed[j] = true;                   // p* "pokriva" j
+        }
+    }
+    out.resize(R, EMPTY_NEIGHBOR);
+    node.setNeighbors(std::move(out));
+    return true;
+}
+bool Vamana::add(data::IVector &vector, const KMeans::ProductQuantizer &pq,
+                 std::vector<std::vector<long long>>& codebookAssignments,
+                 data::FactoryVector &factory, const Metadata &metadata,
+                 metrics::IMetrics &metric) {
+    const std::size_t R     = metadata.NeighborsSize;
+    const std::size_t n     = codebookAssignments.size();
+    const std::size_t newId = n;                        // gusti id-evi: id == pozicija
+
+    // 1. kandidati preko search-a (search sam otvara i zatvara fajl, pa ide pre pisanja)
+    std::vector<std::unique_ptr<Node>> found;
+    if (n > 0)
+        found = search(vector, pq, codebookAssignments, factory,
+                       std::max<std::size_t>(metadata.L, R), metadata, metric);
+
+    std::vector<std::size_t> cand;
+    cand.reserve(found.size());
+    for (auto& f : found) cand.push_back(static_cast<std::size_t>(f->getId()));
+    found.clear();
+
+    LinearNodeStorage storage(filePath + ".vamana", OpenMode::Read, true);
+
+    // 2. novi cvor, kandidati kao privremeni susedi pa RobusePune skracuje na R
+    Node newNode(R, factory);
+    newNode.setID(newId);                               // <-- prilagodi Node API-ju
+    newNode.setVector(vector);                          // <-- prilagodi Node API-ju
+    newNode.setNeighbors(cand);                         // moze biti duze od R, vidi napomenu
+    if (!cand.empty() && !RobusePune(newNode, factory, metadata, storage, metric))
+        return false;
+    if (cand.empty()) newNode.setNeighbors(std::vector<std::size_t>(R, EMPTY_NEIGHBOR));
+
+    // 3. upis na kraj fajla (mora pre povratnih grana, jer ih RobusePune ucitava iz storage-a)
+    storage.saveVector(newNode);
+    storage.commit();
+
+    // 4. povratne grane j -> novi
+    for (std::size_t j : newNode.getNeighbors()) {
+        if (j == EMPTY_NEIGHBOR) continue;
+
+        Node jn(R, factory);
+        storage.loadVector(static_cast<long long>(j), jn);
+
+        std::vector<std::size_t> nbrs;
+        for (std::size_t x : jn.getNeighbors())
+            if (x != EMPTY_NEIGHBOR) nbrs.push_back(x);
+        if (std::find(nbrs.begin(), nbrs.end(), newId) != nbrs.end()) continue;
+
+        nbrs.push_back(newId);
+        if (nbrs.size() <= R) {
+            nbrs.resize(R, EMPTY_NEIGHBOR);
+            jn.setNeighbors(std::move(nbrs));
+        } else {
+            jn.setNeighbors(std::move(nbrs));           // R+1 suseda
+            if (!RobusePune(jn, factory, metadata, storage, metric)) return false;
+        }
+        storage.overwriteVector(static_cast<long long>(j), jn);
+    }
+    storage.commit();
+    codebookAssignments.push_back(pq.quantize(vector, metric));
+     return true;
+}
+std::vector<std::unique_ptr<Node>> Vamana::search(const data::IVector& query, const KMeans::ProductQuantizer &pq, std::vector<std::vector<long long>>& codebookAssignments,
+        data::FactoryVector &factory, size_t K, const Metadata &metadata, metrics::IMetrics &metric) {
+            if(K == 0 || codebookAssignments.empty()){
+                return {};
+            }
+
+            LinearNodeStorage storage(filePath + ".vamana", OpenMode::Read, true);
+
+            if(storage.getSize() == 0 || 1 >= storage.getSize() || 1 >= codebookAssignments.size()){
+                return {};
+            }
+
+            auto cmp = [](const auto& a, const auto& b) {
+                return a.first < b.first;
+            };
+
+            size_t candidatesSize = std::min(
+                static_cast<size_t>(std::max(metadata.Ef, K)),
+                codebookAssignments.size()
+            );
+
+            std::vector<std::pair<double, long long>> topK;
+
+            std::priority_queue<
+                std::pair<double, std::size_t>,
+                std::vector<std::pair<double, std::size_t>>,
+                std::greater<std::pair<double, std::size_t>>
+            > candidates;
+
+            std::map<std::size_t, bool> visited;
+
+            double startDistance = metric.distance(
+                codebookAssignments[1],
+                pq,
+                query
+            );
+
+            candidates.push({startDistance, 1});
+            visited[1] = true;
+            topK.push_back({startDistance, 1});
+
+            while(!candidates.empty()){
+                if(topK.size() >= candidatesSize &&
+                   candidates.top().first >= topK.back().first){
+                    break;
+                }
+
+                std::vector<long long> beamSearchIndexes;
+
+                for(int i = 0; i < metadata.beamSize && !candidates.empty(); ++i){
+                    if(topK.size() >= candidatesSize &&
+                       candidates.top().first >= topK.back().first){
+                        break;
+                    }
+
+                    auto [dist, id] = candidates.top();
+                    candidates.pop();
+
+                    beamSearchIndexes.push_back(id);
+                }
+
+                if(beamSearchIndexes.empty()){
+                    break;
+                }
+
+                auto nodes = storage.loadBeam(
+                    beamSearchIndexes,
+                    &factory,
+                    metadata.NeighborsSize
+                );
+
+                for(auto &node : nodes){
+                    for(auto &neighbour : node->getNeighbors()){
+                        if(neighbour == EMPTY_NEIGHBOR){
+                            continue;
+                        }
+
+                        if(neighbour >= codebookAssignments.size()){
+                            continue;
+                        }
+
+                        if(visited[neighbour]){
+                            continue;
+                        }
+
+                        visited[neighbour] = true;
+
+                        double predictedDistance = metric.distance(
+                            codebookAssignments[neighbour],
+                            pq,
+                            query
+                        );
+
+                        if(topK.size() < candidatesSize ||
+                           predictedDistance < topK.back().first){
+
+                            candidates.push({
+                                predictedDistance,
+                                neighbour
+                            });
+
+                            if(topK.size() < candidatesSize){
+                                topK.push_back({
+                                    predictedDistance,
+                                    neighbour
+                                });
+                            } else {
+                                topK.back() = {
+                                    predictedDistance,
+                                    neighbour
+                                };
+                            }
+
+                            Utils::repositionElement(
+                                topK,
+                                topK.size() - 1,
+                                cmp
+                            );
+                        }
+                    }
+                }
+            }
+
+            std::vector<std::pair<double, std::size_t>> exactResults;
+
+            for(const auto& [dist, id] : topK){
+                if(id >= storage.getSize()){
+                    continue;
+                }
+
+                std::unique_ptr<Node> node =
+                    std::make_unique<Node>(
+                        metadata.NeighborsSize,
+                        factory
+                    );
+
+                storage.loadVector(id, *node);
+
+                double exactDistance = metric(
+                    node->getVector(),
+                    query
+                );
+
+                exactResults.push_back({
+                    exactDistance,
+                    id
+                });
+            }
+
+            std::sort(
+                exactResults.begin(),
+                exactResults.end(),
+                [](const auto& a, const auto& b){
+                    return a.first < b.first;
+                }
+            );
+
+            std::vector<std::unique_ptr<Node>> result;
+
+            size_t resultSize = std::min(K, exactResults.size());
+
+            for(size_t i = 0; i < resultSize; ++i){
+                std::unique_ptr<Node> node =
+                    std::make_unique<Node>(
+                        metadata.NeighborsSize,
+                        factory
+                    );
+
+                storage.loadVector(
+                    exactResults[i].second,
+                    *node
+                );
+
+                result.push_back(std::move(node));
+            }
+
+            return result;
+        }
 }

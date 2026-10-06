@@ -102,7 +102,7 @@ TEST_F(VamanaBuildPerfTest, TrainQuantizeAndBuildIndex) {
 
     // ---- 4. Build Vamana ----
     const std::string indexBase = (workDir / "index").string();
-    DataStructures::Vamana vamana(indexBase);
+    DataStructures::Vamana vamana("/home/pepi/Documents/projects/PandaDB/downloadedDataTest/sift-128-euclidean ");
     std::cerr << "Vamana index will be written to: " << indexBase << ".vamana\n";
 
     bool ok = false;
@@ -112,6 +112,7 @@ TEST_F(VamanaBuildPerfTest, TrainQuantizeAndBuildIndex) {
     std::cerr << "buildIndex: " << buildMs << " ms ("
               << buildMs / 1000.0 << " s)\n";
 
+    
     ASSERT_TRUE(ok);
     EXPECT_TRUE(fs::exists(indexBase + ".vamana"));
     EXPECT_GT(fs::file_size(indexBase + ".vamana"), 0u);

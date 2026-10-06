@@ -59,4 +59,11 @@ namespace DataStructures{
     void DataStructures::Node::setNeighbors(std::vector<size_t> neighbors) {
             this->Neighbors = std::move(neighbors);
     }
+
+    void DataStructures::Node::setID(size_t id) {
+            this->id = id;
+    }
+    void DataStructures::Node::setVector(const data::IVector& vector) {
+            this->Vector = vector.clone(0, vector.Dimension());
+    }
 }

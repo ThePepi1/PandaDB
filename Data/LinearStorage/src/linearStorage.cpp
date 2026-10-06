@@ -121,6 +121,7 @@ namespace DataStructures {
     LinearStorage<T>& LinearStorage<T>::overwriteVector(long long index, const T& item) {
         requireWrite("overwriteVector");
         writer->seek(getVectorOffset(index));   
+        *writer << item;
         dirty = true;
         return *this;
     }
@@ -169,54 +170,30 @@ namespace DataStructures {
         return std::make_unique<LoadStream<T>>(0, end, *getVectorStream(0, end, factory));
     }
 
-    template<typename T>
-    std::vector<std::unique_ptr<T>> LinearStorage<T>::loadBeam(
-        const std::vector<long long>& indices,
-        FactoryType* factory,
-        size_t extra
-    ) const
-    {
-        const size_t numIndices = indices.size();
-        std::vector<std::unique_ptr<T>> result;
-        if (numIndices == 0) return result;
+template<typename T>
+std::vector<std::unique_ptr<T>> LinearStorage<T>::loadBeam(
+    const std::vector<long long>& indices,
+    FactoryType* factory,
+    size_t extra
+) const
+{
+    std::vector<std::unique_ptr<T>> result;
+    if (indices.empty()) return result;
+    if (!factory) throw std::invalid_argument("Factory pointer required in loadBeam.");
 
-        if (!factory) {
-            throw std::invalid_argument("Factory pointer required in loadBeam.");
+    result.reserve(indices.size());
+    for (long long idx : indices) {
+        std::unique_ptr<T> itemPtr;
+        if constexpr (std::is_abstract<T>::value) {
+            itemPtr = factory->createVector(dim);
+        } else {
+            itemPtr = std::make_unique<T>(extra, *factory);
         }
-
-        result.reserve(numIndices);
-
-        std::vector<char*>  buffers(numIndices);
-        std::vector<size_t> positions(numIndices);
-        std::vector<size_t> sizes(numIndices);
-
-        const size_t recordSizeBytes = Traits::recordSize(dim, extra);
-
-        for (size_t i = 0; i < numIndices; ++i) {
-            long long idx = indices[i];
-            if (idx < 0 || idx >= size) {
-                throw std::out_of_range("Index out of bounds in loadBeam: " + std::to_string(idx));
-            }
-
-            std::unique_ptr<T> itemPtr;
-            if constexpr (std::is_abstract<T>::value) {
-                itemPtr = factory->createVector(dim);
-            } else {
-                itemPtr = std::make_unique<T>(extra, *factory);
-            }
-
-            buffers[i]   = reinterpret_cast<char*>(itemPtr.get());
-            positions[i] = static_cast<size_t>(getVectorOffset(idx));
-            sizes[i]     = recordSizeBytes;
-
-            result.push_back(std::move(itemPtr));
-        }
-
-        io().beam(buffers, positions, sizes);   
-
-        return result;
+        loadVector(idx, *itemPtr);    // proverava opseg i parsira preko operator>>
+        result.push_back(std::move(itemPtr));
     }
-
+    return result;
+}
     template class LinearStorage<data::IVector>;
     template class LinearStorage<Node>;
 

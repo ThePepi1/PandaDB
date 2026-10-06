@@ -13,16 +13,16 @@ namespace DataStructures{
         std::string filePath;
         private:
         std::string merge(std::vector<std::string> &files,  data::FactoryVector &factory, const Metadata &metadata);
-        bool RobusePune(const Node &node, const KMeans::ProductQuantizer &pq, std::vector<std::vector<long long>>& codebookAssignments, 
-            data::FactoryVector &factory, const Metadata &metadata, std::string &filePath); 
+            bool RobusePune(Node &node, data::FactoryVector &factory, const Metadata &metadata, LinearStorage<Node> &storage, metrics::IMetrics &metric); 
         public:
         std::vector<std::unique_ptr<Node>> search(const data::IVector& query, 
             const KMeans::ProductQuantizer &pq, std::vector<std::vector<long long>>& codebookAssignments,
              data::FactoryVector &factory, size_t K, const Metadata &metadata, metrics::IMetrics &metric);
         Vamana(const std::string& filePath);
         bool add(data::IVector &vector, const KMeans::ProductQuantizer &pq, 
-            std::vector<std::vector<long long>>& codebookAssignments, data::FactoryVector &factory, const Metadata &metadata);
+            std::vector<std::vector<long long>>& codebookAssignments, data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &metric);
         bool buildIndex(LinearStorage<Node> &storage, const KMeans::CodeBook &codebook, data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &distance);
     };
     void removeDumpFiles(const std::string& filePath) ;
+    
 }

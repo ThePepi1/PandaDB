@@ -20,6 +20,8 @@ namespace DataStructures{
         const size_t getId() const;
         const data::IVector& getVector() const;
         const std::vector<size_t>& getNeighbors() const;
+        void setID(size_t id);
+        void setVector(const data::IVector& vector);
         friend file::fileReader& operator>>(file::fileReader& file,  Node& node);
         friend file::fileReaderWriter& operator>>(file::fileReaderWriter& file,  Node& node);
         friend file::fileReaderWriter& operator<<(file::fileReaderWriter& file, const Node& node);
