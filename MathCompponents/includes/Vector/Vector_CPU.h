@@ -1,5 +1,6 @@
 #pragma once
 #include "IVector.h"
+#include <memory>
 namespace data {
     class Vector_CPU : public IVector {
     public:
@@ -27,5 +28,6 @@ namespace data {
         void operator=(const IVector& other) override; 
         double norm() const override;
         std::unique_ptr<IVector> normalize() const override;
+        std::unique_ptr<IVector> clone(size_t start, size_t dimension) const override;
     };
 }

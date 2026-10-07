@@ -96,21 +96,36 @@ namespace KMeans {
             counts[index]++;
         }
     }
-    bool CodeBook::updateAverages() {
-        bool updated = false;
-        for (long long i = 0; i < coodeBookSize; ++i) {
-            if (counts[i] > 0) {
-                (*averages[i]) /= static_cast<double>(counts[i]);
-            }
-            if (counts[i] > 0 && (*centroids[i]) != (*averages[i])) {
-                *centroids[i] = *averages[i];
-                (*averages[i]) *= 0.0; // Reset averages
-                counts[i] = 0; // Reset counts
+    #include <random>
+
+bool CodeBook::updateAverages(const std::vector<std::unique_ptr<data::IVector>>& reseedCandidates,
+                              const metrics::IMetrics& metrics,
+                              double eps) {
+    static thread_local std::mt19937_64 rng{std::random_device{}()};
+    bool updated = false;
+
+    for (long long i = 0; i < coodeBookSize; ++i) {
+        if (counts[i] > 0) {
+            (*averages[i]) /= static_cast<double>(counts[i]);
+
+            // pomeraj centroida (sa tolerancijom umesto != na double-ovima)
+            if (metrics(*centroids[i], *averages[i]) > eps) {
                 updated = true;
             }
+            *centroids[i] = *averages[i];
+        } else if (!reseedCandidates.empty()) {
+            // Prazan klaster -> skoci na nasumicnu tacku iz podataka
+            std::uniform_int_distribution<size_t> dist(0, reseedCandidates.size() - 1);
+            *centroids[i] = *reseedCandidates[dist(rng)];
+            updated = true; // treba jos iteracija da se stabilizuje
         }
-        return updated;
+
+        // UVEK resetuj, inace se akumulira preko iteracija
+        (*averages[i]) *= 0.0;
+        counts[i] = 0;
     }
+    return updated;
+}
     std::vector<long long> CodeBook::belongs(const data::IVector& vector, const metrics::IMetrics& metrics, int k) const {
         std::vector<std::pair<double, long long>> distances;
         for (long long i = 0; i < coodeBookSize; ++i) {

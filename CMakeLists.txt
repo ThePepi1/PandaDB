@@ -9,6 +9,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+
 add_library(panda_lib
         MathCompponents/src/Matix/Matrix.cpp
         MathCompponents/src/Matix/Matrix_CPU.cpp
@@ -44,9 +45,9 @@ add_library(panda_lib
         File/src/fileHendler.cpp
         Utils/config/Block/Block.h
         Utils/config/Block/BLock.cpp
-        File/test/fileTest.cpp
         KMeans/includes/codeBook.h
-        Data/VectorStream/includes/IVectorStream.h
+        Data/VectorStream/includes/VectorStreams.h
+        Data/VectorStream/includes/IStream.h
         KMeans/src/codeBook.cpp
         KMeans/includes/productquntizier.h
         KMeans/includes/trainer.h
@@ -54,14 +55,26 @@ add_library(panda_lib
         KMeans/src/trainer.cpp
         Data/LinearStorage/includes/linearStorage.h
         Data/LinearStorage/src/linearStorage.cpp
-        Data/VectorStream/includes/IVectorReaderStream.h
-        Data/VectorStream/src/IVectorReaderStream.cpp
-        Data/VectorStream/includes/IVectorLoadStream.h
-        Data/VectorStream/src/IVectorLoadStream.cpp
+        Data/LinearStorage/includes/linearStorageTraits.h
+        Data/VectorStream/includes/ReaderStream.h
+        Data/VectorStream/src/ReaderStream.cpp
+        Data/VectorStream/includes/LoadStream.h
+        Data/VectorStream/src/LoadStream.cpp
+        Data/Vamana/includes/Vamana.h
+        Data/Vamana/includes/Node.h
+        Data/Vamana/src/Node.cpp
+        Data/VectorStream/includes/NodeStream.h
+        Data/Space/includes/metadata.h
+        Data/Vamana/src/Vamana.cpp
+        Data/Vamana/includes/ClusterNode.h
+        Data/Vamana/src/ClusterNode.cpp
+        Utils/helperFunctions/includes/array.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
-
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(URING REQUIRED IMPORTED_TARGET liburing)
+target_link_libraries(panda_lib PUBLIC PkgConfig::URING)
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2)
 check_cxx_compiler_flag("-mfma" HAS_FMA)
@@ -87,17 +100,22 @@ add_executable(PandaDB_tests
         Algoritams/tests/searcher_test.cpp
         File/test/fileTest.cpp
         Data/LinearStorage/test/linearStorageTest.cpp
+        Data/Vamana/test/VamanaSearhTest.cpp
 )
+find_package(HDF5 REQUIRED COMPONENTS C)
+
 target_link_libraries(PandaDB_tests
         PRIVATE
         panda_lib
         GTest::gtest_main
+        HDF5::HDF5
 )
 include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)
 
 add_executable(PandaDB_long_tests
         KMeans/test/loadTest.cpp
+        Data/Vamana/test/VamanaTest.cpp
 )
 target_link_libraries(PandaDB_long_tests
         PRIVATE
@@ -109,5 +127,4 @@ include(GoogleTest)
 gtest_discover_tests(PandaDB_tests)
 gtest_discover_tests(PandaDB_long_tests
         PROPERTIES LABELS "long"
-        DISCOVERY_TIMEOUT 600
 )
