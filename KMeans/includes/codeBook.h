@@ -28,7 +28,9 @@ namespace KMeans {
         long long belongs(const data::IVector& vector, const metrics::IMetrics& metrics) const; 
         std::vector<long long> belongs(const data::IVector& vector, const metrics::IMetrics& metrics, int k) const;
         void fit(data::IVector& point, const metrics::IMetrics& metrics);
-        bool updateAverages();
+        bool updateAverages(const std::vector<std::unique_ptr<data::IVector>>& reseedCandidates,
+                              const metrics::IMetrics& metrics,
+                              double eps = 1e-6);
         friend file::fileReader &operator>>(file::fileReader& reader, CodeBook& codeBook);
         friend file::fileReaderWriter &operator<<(file::fileReaderWriter& writer, const CodeBook& codeBook);
         friend file::fileReaderWriter &operator>>(file::fileReaderWriter& rw, CodeBook& codeBook);

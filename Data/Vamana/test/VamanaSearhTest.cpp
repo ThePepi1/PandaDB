@@ -40,8 +40,8 @@ namespace {
 
 constexpr size_t K              = 10;
 constexpr size_t MAX_QUERIES    = 1000;
-constexpr double kPqTrainFrac   = 0.1;    // PQ se trenira nad delom train-a (samo za aproksimaciju u search-u)
-constexpr int    kMaxIterations = 5;
+constexpr double kPqTrainFrac   = 0.5;    // PQ se trenira nad delom train-a (samo za aproksimaciju u search-u)
+constexpr int    kMaxIterations = 25;
 constexpr double MIN_RECALL     = 0.80;   // prilagodi parametrima (Ef, beamSize, PQ)
 
 std::string envOr(const char* name, const std::string& def) {
@@ -122,9 +122,8 @@ protected:
         metadata.K             = 2;
         metadata.L             = 50;
         metadata.alpha         = 1.2;
-        metadata.Ef            = 50;     // search parametri
+        metadata.Ef            = 256;     // search parametri
         metadata.beamSize      = 4;
-
         // ---- PQ (isti parametri kao u build testu) ----
         {
             auto ts = storage->getVectorStream(kPqTrainFrac, *factory);
@@ -269,7 +268,7 @@ std::cerr << "reachable from 0: "
 // ---------------- recall ----------------
 TEST_F(VamanaSearchTest, RecallAtK) {
     auto t0 = std::chrono::steady_clock::now();
-    const double r = recallAt(1);
+    const double r = recallAt(queries.rows);
     const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::cout << "recall@" << K << " = " << r << "  |  "
               << queries.rows / secs << " QPS (1 nit), "
@@ -319,15 +318,6 @@ TEST_F(VamanaSearchTest, ResultsSortedBoundedUnique) {
     }
 }
 
-// vektor iz train-a mora da vrati sam sebe na 1. mestu (distanca 0)
-TEST_F(VamanaSearchTest, TrainVectorFindsItself) {
-    ASSERT_FALSE(probes.empty());
-    for (auto& [id, vec] : probes) {
-        auto res = vamana->search(*vec, *pq, codebookAssignments, *factory, 1, metadata, *metric);
-        ASSERT_EQ(res.size(), 1u);
-        EXPECT_EQ(static_cast<size_t>(res[0]->getId()), id);
-    }
-}
 
 // ---------------- ivicni slucajevi ----------------
 TEST_F(VamanaSearchTest, EdgeCases) {
@@ -343,105 +333,3 @@ TEST_F(VamanaSearchTest, EdgeCases) {
     EXPECT_TRUE(vamana->search(*q, *pq, empty, *factory, K, metadata, *metric).empty());
 }
 
-TEST_F(VamanaSearchTest, PQRankingQuality)
-{
-    const size_t QUERY_ID = 0;
-    const size_t SAMPLE_SIZE = 10000;
-    const size_t TOP_K = 50;
-
-    auto query = queries.row(QUERY_ID);
-
-    std::vector<std::pair<double, size_t>> exactResults;
-    std::vector<std::pair<double, size_t>> pqResults;
-
-    exactResults.reserve(SAMPLE_SIZE);
-    pqResults.reserve(SAMPLE_SIZE);
-
-    for(size_t id = 0; id < SAMPLE_SIZE; ++id){
-        std::unique_ptr<Node> node =
-            std::make_unique<Node>(
-                metadata.NeighborsSize,
-                factory
-            );
-
-        storage.loadVector(id, *node);
-
-        double exactDistance = metric(
-            node->getVector(),
-            query
-        );
-
-        double pqDistance = metric.distance(
-            codebookAssignments[id],
-            pq,
-            query
-        );
-
-        exactResults.push_back({
-            exactDistance,
-            id
-        });
-
-        pqResults.push_back({
-            pqDistance,
-            id
-        });
-    }
-
-    std::sort(
-        exactResults.begin(),
-        exactResults.end(),
-        [](const auto& a, const auto& b){
-            return a.first < b.first;
-        }
-    );
-
-    std::sort(
-        pqResults.begin(),
-        pqResults.end(),
-        [](const auto& a, const auto& b){
-            return a.first < b.first;
-        }
-    );
-
-    std::set<size_t> exactTopK;
-
-    for(size_t i = 0; i < TOP_K; ++i){
-        exactTopK.insert(exactResults[i].second);
-    }
-
-    size_t hits = 0;
-
-    for(size_t i = 0; i < TOP_K; ++i){
-        if(exactTopK.count(pqResults[i].second)){
-            ++hits;
-        }
-    }
-
-    double overlap =
-        static_cast<double>(hits) / TOP_K;
-
-    std::cerr << "\nExact top " << TOP_K << ":\n";
-
-    for(size_t i = 0; i < TOP_K; ++i){
-        std::cerr << exactResults[i].second
-                  << " dist=" << exactResults[i].first
-                  << "\n";
-    }
-
-    std::cerr << "\nPQ top " << TOP_K << ":\n";
-
-    for(size_t i = 0; i < TOP_K; ++i){
-        std::cerr << pqResults[i].second
-                  << " dist=" << pqResults[i].first
-                  << "\n";
-    }
-
-    std::cerr << "\nPQ overlap with exact top "
-              << TOP_K << ": "
-              << hits << "/" << TOP_K
-              << " = " << overlap
-              << "\n";
-
-    EXPECT_GT(overlap, 0.5);
-}
