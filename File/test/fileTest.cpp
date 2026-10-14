@@ -45,7 +45,7 @@ std::vector<char> makePattern(size_t size, char seed = 0) {
     return data;
 }
 
-constexpr size_t kBlockSize = static_cast<size_t>(config::BLOCK_SIZE);
+constexpr size_t kBlockSize = static_cast<size_t>(config::SIZE_OFF_BLOCK);
 
 } 
 class FileHandlerTest : public ::testing::Test {

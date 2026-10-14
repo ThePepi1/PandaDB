@@ -1,6 +1,7 @@
 #include "../../includes/Vector/IVector.h"
 #include <stdexcept>
 #include <iostream>
+#include <cstring>
 
 namespace data {
     IVector::IVector(std::size_t dimension): dimension(dimension) {
@@ -67,23 +68,33 @@ namespace data {
         return stream;
     }
     file::fileReader& operator>>(file::fileReader& stream, IVector& vector) {
-        size_t dimension;
-        stream >> dimension; 
-        vector.dimension = dimension;
-        if (vector.data != nullptr && vector.owner) {
+        size_t newDim;
+        stream >> newDim;
+
+        std::unique_ptr<double[]> fresh(new double[newDim]);   // ako baci, vector je netaknut
+        for (size_t i = 0; i < newDim; i++)
+            stream >> fresh[i];                                // ako baci, fresh se sam oslobodi
+
+        if (vector.data != nullptr && vector.owner)
             delete[] vector.data;
-        }
-        vector.data = new double[dimension];
-        for (size_t i = 0; i < vector.dimension; i++) {
-            stream >> vector.Data()[i];
-        }
+        vector.data      = fresh.release();
+        vector.dimension = newDim;
+        vector.owner     = true;
         return stream;
     }
-    file::fileReaderWriter& operator>>(file::fileReaderWriter& stream,  IVector& vector) {
-        stream << vector.dimension; 
-        for (size_t i = 0; i < vector.dimension; i++) {
-            stream << vector.Data()[i];
-        }
+    file::fileReaderWriter& operator>>(file::fileReaderWriter& stream, IVector& vector) {
+        size_t newDim;
+        stream >> newDim;                                    
+
+        std::unique_ptr<double[]> fresh(new double[newDim]);
+        for (size_t i = 0; i < newDim; i++)
+            stream >> fresh[i];                                
+
+        if (vector.data != nullptr && vector.owner)
+            delete[] vector.data;
+        vector.data      = fresh.release();
+        vector.dimension = newDim;
+        vector.owner     = true;
         return stream;
     }
     bool IVector::operator!=(const IVector& other) {
@@ -92,4 +103,21 @@ namespace data {
     size_t IVector::getSizeInBytes(size_t dimension) {
         return sizeof(size_t) + dimension * sizeof(double);
     }
+    void IVector::serialize(char* buffer) const {
+        std::memcpy(buffer, &dimension, sizeof(size_t));
+        std::memcpy(buffer + sizeof(size_t), data, dimension * sizeof(double));
+    }
+    void IVector::deserialize(const char* buffer) {
+    size_t newDim;
+    std::memcpy(&newDim, buffer, sizeof(size_t));
+    double* fresh = new double[newDim];          // ako baci, ništa nije diranо
+    std::memcpy(fresh, buffer + sizeof(size_t), newDim * sizeof(double));
+    if (data != nullptr && owner) delete[] data;
+    data = fresh;
+    dimension = newDim;
+    owner = true;                                // novi bafer je naš
+    }
+    
 }
+
+

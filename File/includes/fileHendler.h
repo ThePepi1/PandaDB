@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <vector>
 #include "../../Utils/config/Block/Block.h"
+#include <liburing.h>
 
 namespace file {
     class FileMenager;
@@ -14,7 +16,7 @@ namespace file {
             size_t head;
             size_t fileSize;
             std::fstream stream;
-            char buffer[config::BLOCK_SIZE];
+            char buffer[config::SIZE_OFF_BLOCK];
             long long LoadedBlock = -1;
             std::string filePath;
             virtual bool LoadBlock(long long block);
@@ -35,9 +37,13 @@ namespace file {
             long long operator>>(long long& data);
             long long operator>>(double& data);
             long long operator>>(size_t& data);
+            long long operator>>(std::string& buffer);
             struct Deleter {
                 void operator()(fileReader* reader) const;
             };
+            void beam(std::vector<char*> &buffer, std::vector<size_t> &positionst, std::vector<size_t> &sizes);
+            template<typename T>
+            fileReader &operator>>(std::vector<T> &data); 
     };
     class fileReaderWriter : public fileReader { 
         private :
@@ -59,6 +65,9 @@ namespace file {
             long long operator<<(const std::string& buffer); 
             long long operator<<(long long data);
             long long operator<<(double data);
+            template<typename T>
+            fileReaderWriter &operator<<(const std::vector<T> &data);
+
 
             friend class FileMenager;
             

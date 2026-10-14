@@ -4,6 +4,7 @@
 
 #include <immintrin.h>
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 namespace data {
     Vector_CPU::Vector_CPU(size_t dimension):IVector(dimension) {}
@@ -248,6 +249,9 @@ namespace data {
         for (size_t i = 0; i < dimension; ++i, ++thisData, ++otherData) {
             *thisData = *otherData;
         }
+    }
+    std::unique_ptr<IVector> Vector_CPU::clone(size_t start, size_t dimension) const {
+        return std::make_unique<Vector_CPU>(dimension, Data() + start);
     }
 
 }
