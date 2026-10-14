@@ -37,10 +37,13 @@ namespace file {
             long long operator>>(long long& data);
             long long operator>>(double& data);
             long long operator>>(size_t& data);
+            long long operator>>(std::string& buffer);
             struct Deleter {
                 void operator()(fileReader* reader) const;
             };
             void beam(std::vector<char*> &buffer, std::vector<size_t> &positionst, std::vector<size_t> &sizes);
+            template<typename T>
+            fileReader &operator>>(std::vector<T> &data); 
     };
     class fileReaderWriter : public fileReader { 
         private :
@@ -62,7 +65,9 @@ namespace file {
             long long operator<<(const std::string& buffer); 
             long long operator<<(long long data);
             long long operator<<(double data);
-            
+            template<typename T>
+            fileReaderWriter &operator<<(const std::vector<T> &data);
+
 
             friend class FileMenager;
             

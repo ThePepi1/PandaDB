@@ -3,9 +3,6 @@
 #include <filesystem>
 #include <cstring>
 
-
-
-
 void file::fileReader::Deleter::operator()(fileReader* reader) const {
     file::FileMenager::getInstance().releseFileReader(reader->filePath);
     delete reader;
@@ -235,7 +232,19 @@ long long file::fileReaderWriter::operator<<(const char* buffer) {
     return write(buffer, std::strlen(buffer));
 }
 long long file::fileReaderWriter::operator<<(const std::string& buffer) {
-    return write(buffer.c_str(), buffer.size());
+    size_t size = buffer.size();
+    size = this->operator<<(size); // Write the size of the string first
+    return write(buffer.c_str(), buffer.size()) + size;
+}
+long long file::fileReader::operator>>(std::string& buffer) {
+    size_t size;
+    long long bytesRead = this->operator>>(size); // Read the size of the string first
+    if (bytesRead <= 0) {
+        return bytesRead; // Return if reading size failed
+    }
+    buffer.resize(size);
+    long long readBytes = read(&buffer[0], size); // Read the actual string data
+    return bytesRead + readBytes; // Return total bytes read (size + string data)
 }
 long long file::fileReaderWriter::operator<<(long long data) {
     return write(reinterpret_cast<const char*>(&data), sizeof(long long));
@@ -363,4 +372,23 @@ void file::fileReader::beam(std::vector<char*> &buffer, std::vector<size_t> &pos
         read(buffer[i], static_cast<long long>(sizes[i]), static_cast<long long>(positionst[i]));
     }
 #endif
+}
+template<typename T>
+file::fileReader & operator>>(file::fileReader& reader, std::vector<T> &data) {
+    size_t size;
+    reader >> size;
+    data.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        reader >> data[i];
+    }
+    return reader;
+}
+template<typename T>
+file::fileReaderWriter & operator<<(file::fileReaderWriter& writer, const std::vector<T> &data) {
+    size_t size = data.size();
+    writer << size;
+    for (const auto& item : data) {
+        writer << item;
+    }
+    return writer;
 }

@@ -69,6 +69,8 @@ add_library(panda_lib
         Data/Vamana/includes/ClusterNode.h
         Data/Vamana/src/ClusterNode.cpp
         Utils/helperFunctions/includes/array.h
+        Data/Space/src/metadata.cpp
+        Data/Space/src/Space.cpp
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)
