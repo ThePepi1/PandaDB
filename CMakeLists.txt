@@ -71,6 +71,8 @@ add_library(panda_lib
         Utils/helperFunctions/includes/array.h
         Data/Space/src/metadata.cpp
         Data/Space/src/Space.cpp
+        Data/VectorStream/src/StreamTransletor.cpp
+        Data/VectorStream/includes/StreamTransletor.h
 )
 
 target_include_directories(panda_lib PUBLIC MathCompponents/includes)

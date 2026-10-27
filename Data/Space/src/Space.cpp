@@ -7,6 +7,7 @@
 #include "../includes/metadata.h"
 #include "../../Metrics/includes/MetricFactory.h"
 #include "../../KMeans/includes/trainer.h"
+#include "../../Data/VectorStream/includes/StreamTransletor.h"
 namespace DataStructures {
 
 
@@ -75,21 +76,12 @@ namespace DataStructures {
         }
         // Building the Vamana index using Conector    
             const std::string nodesPath = (path + "/nodes.dump ");
-    DataStructures::LinearStorage<DataStructures::Node> nodeStorage(
-        nodesPath, metadata.vectorDim, 0, metadata.NeighborsSize);
-
-        {
+        
         long long count = 0;
         auto stream = storage.getVectorStream(factory);
-        while (stream->hasNext()) {
-            auto vec = stream->next();                       // ADAPT: whatever your stream returns
-            DataStructures::Node node = DataStructures::Node(count, vec->clone(0, vec->Dimension()),metadata.NeighborsSize); // ADAPT: Node constructor
-            nodeStorage.saveVector(node);
-            ++count;
-        }
-        nodeStorage.commit();
-        }
-        this->vamana->buildIndex(nodeStorage, *codeBook, factory, metadata, *metric);
+        StreamTransletor transletor(std::move(stream), metadata.NeighborsSize);
+        
+        this->vamana->buildIndex(transletor, *codeBook, factory, metadata, *metric);
         
         // Quantize all vectors in the storage as well as create a LinearStorage with Nodes so that we can build the Vamana index.
         // Remove Node file

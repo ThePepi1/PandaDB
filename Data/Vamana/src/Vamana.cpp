@@ -60,7 +60,7 @@ namespace DataStructures {
         mergedStorage.commit();    
         return mergedFilePath;
     }
-    bool Vamana::buildIndex(LinearStorage<Node> &storage, const KMeans::CodeBook &codebook, 
+    bool Vamana::buildIndex(INodeStream &stream, const KMeans::CodeBook &codebook, 
          data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &metric) {    
         std::string tempFilePath = filePath + "_temp";
         std::vector<LinearNodeStorage*> tempStorages;
@@ -70,10 +70,9 @@ namespace DataStructures {
             tempFilePaths.push_back(tempFile);
             tempStorages.emplace_back(new LinearNodeStorage(tempFile , metadata.vectorDim, 0, metadata.NeighborsSize / metadata.K));
         }
-        std::unique_ptr<INodeStream> stream = storage.getVectorStream(factory);
         auto startTime = std::chrono::high_resolution_clock::now();
-        while (stream->hasNext()){ 
-            std::shared_ptr<Node> node = stream->next();
+        while (stream.hasNext()){ 
+            std::shared_ptr<Node> node = stream.next();
             std::vector<long long> assignments = codebook.belongs(node->getVector(), metric, metadata.K);
             for (long long clusterId : assignments) {
                 if (clusterId >= 0 && clusterId < codebook.getSize()) {

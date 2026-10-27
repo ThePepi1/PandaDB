@@ -7,6 +7,7 @@
 #include "../../Data/LinearStorage/includes/linearStorage.h"
 #include "../../KMeans/includes/codeBook.h"
 #include "../../Data/Space/includes/metadata.h"
+#include "../../Data/VectorStream/includes/NodeStream.h"
 
 namespace DataStructures{
     class Vamana{ 
@@ -21,7 +22,7 @@ namespace DataStructures{
         Vamana(const std::string& filePath);
         bool add(data::IVector &vector, const KMeans::ProductQuantizer &pq, 
             std::vector<std::vector<long long>>& codebookAssignments, data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &metric);
-        bool buildIndex(LinearStorage<Node> &storage, const KMeans::CodeBook &codebook, data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &distance);
+        bool buildIndex(INodeStream &stream, const KMeans::CodeBook &codebook, data::FactoryVector &factory, const Metadata &metadata, metrics::IMetrics &distance);
     };
     void removeDumpFiles(const std::string& filePath) ;
     
