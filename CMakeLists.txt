@@ -2,15 +2,19 @@ cmake_minimum_required(VERSION 4.2)
 project(PandaDB)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-FetchContent_MakeAvailable(googletest)
 
+option(PANDA_TESTS "Build tests" ON)
 
-add_library(panda_lib
+if(PANDA_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+            googletest
+            URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+add_library(panda_lib SHARED
         MathCompponents/src/Matix/Matrix.cpp
         MathCompponents/src/Matix/Matrix_CPU.cpp
         Utils/config/CASH_SIZE/CASH_SIZE.cpp
@@ -29,6 +33,7 @@ add_library(panda_lib
         Metrics/includes/EuclideMetrics.h
         Metrics/src/register.cpp
         Metrics/includes/register.h
+        Metrics/includes/MetricPlugin.h
         Metrics/src/CosineSimilarityMetric.cpp
         Metrics/includes/CosineSimilarityMetric.h
         Metrics/src/DotMetric.cpp
@@ -75,10 +80,19 @@ add_library(panda_lib
         Data/VectorStream/includes/StreamTransletor.h
 )
 
-target_include_directories(panda_lib PUBLIC MathCompponents/includes)
+target_include_directories(panda_lib PUBLIC
+        MathCompponents/includes
+        Metrics/includes
+)
+
+set_target_properties(panda_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_link_libraries(panda_lib PUBLIC ${CMAKE_DL_LIBS})
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(URING REQUIRED IMPORTED_TARGET liburing)
 target_link_libraries(panda_lib PUBLIC PkgConfig::URING)
+
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-mavx2" HAS_AVX2)
 check_cxx_compiler_flag("-mfma" HAS_FMA)
@@ -93,42 +107,52 @@ endif()
 find_package(TBB REQUIRED)
 target_link_libraries(panda_lib PUBLIC TBB::tbb)
 
+
 add_executable(PandaDB main.cpp)
 target_link_libraries(PandaDB PRIVATE panda_lib)
 
-add_executable(PandaDB_tests
-        MathCompponents/test/matrix_test.cpp
-        MathCompponents/test/vector_test.cpp
-        Metrics/test/metrics_test.cpp
-        Data/FlatIndex/test/FlatIndex_test.cpp
-        Algoritams/tests/searcher_test.cpp
-        File/test/fileTest.cpp
-        Data/LinearStorage/test/linearStorageTest.cpp
-        Data/Vamana/test/VamanaSearhTest.cpp
-)
-find_package(HDF5 REQUIRED COMPONENTS C)
+install(TARGETS panda_lib PandaDB
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
 
-target_link_libraries(PandaDB_tests
-        PRIVATE
-        panda_lib
-        GTest::gtest_main
-        HDF5::HDF5
-)
-include(GoogleTest)
-gtest_discover_tests(PandaDB_tests)
+install(DIRECTORY MathCompponents/includes/ Metrics/includes/
+        DESTINATION include/panda
+        FILES_MATCHING PATTERN "*.h")
 
-add_executable(PandaDB_long_tests
-        KMeans/test/loadTest.cpp
-        Data/Vamana/test/VamanaTest.cpp
-)
-target_link_libraries(PandaDB_long_tests
-        PRIVATE
-        panda_lib
-        GTest::gtest_main
-)
+        
+if(PANDA_TESTS)
+    find_package(HDF5 REQUIRED COMPONENTS C)
+    include(GoogleTest)
 
-include(GoogleTest)
-gtest_discover_tests(PandaDB_tests)
-gtest_discover_tests(PandaDB_long_tests
-        PROPERTIES LABELS "long"
-)
+    add_executable(PandaDB_tests
+            MathCompponents/test/matrix_test.cpp
+            MathCompponents/test/vector_test.cpp
+            Metrics/test/metrics_test.cpp
+            Data/FlatIndex/test/FlatIndex_test.cpp
+            Algoritams/tests/searcher_test.cpp
+            File/test/fileTest.cpp
+            Data/LinearStorage/test/linearStorageTest.cpp
+            Data/Vamana/test/VamanaSearhTest.cpp
+    )
+    target_link_libraries(PandaDB_tests
+            PRIVATE
+            panda_lib
+            GTest::gtest_main
+            HDF5::HDF5
+    )
+
+    add_executable(PandaDB_long_tests
+            KMeans/test/loadTest.cpp
+            Data/Vamana/test/VamanaTest.cpp
+    )
+    target_link_libraries(PandaDB_long_tests
+            PRIVATE
+            panda_lib
+            GTest::gtest_main
+    )
+
+    gtest_discover_tests(PandaDB_tests)
+    gtest_discover_tests(PandaDB_long_tests
+            PROPERTIES LABELS "long"
+    )
+endif()
