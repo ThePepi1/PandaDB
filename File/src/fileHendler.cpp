@@ -373,22 +373,4 @@ void file::fileReader::beam(std::vector<char*> &buffer, std::vector<size_t> &pos
     }
 #endif
 }
-template<typename T>
-file::fileReader & operator>>(file::fileReader& reader, std::vector<T> &data) {
-    size_t size;
-    reader >> size;
-    data.resize(size);
-    for (size_t i = 0; i < size; ++i) {
-        reader >> data[i];
-    }
-    return reader;
-}
-template<typename T>
-file::fileReaderWriter & operator<<(file::fileReaderWriter& writer, const std::vector<T> &data) {
-    size_t size = data.size();
-    writer << size;
-    for (const auto& item : data) {
-        writer << item;
-    }
-    return writer;
-}
+

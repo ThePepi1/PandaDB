@@ -72,4 +72,24 @@ namespace file {
             friend class FileMenager;
             
     };
+       template<typename T>
+    fileReader& fileReader::operator>>(std::vector<T>& data) {
+        size_t size;
+        *this >> size;
+        data.resize(size);
+        for (size_t i = 0; i < size; ++i) {
+            *this >> data[i];
+        }
+        return *this;
+    }
+ 
+    template<typename T>
+    fileReaderWriter& fileReaderWriter::operator<<(const std::vector<T>& data) {
+        size_t size = data.size();
+        *this << size;
+        for (const auto& item : data) {
+            *this << item;
+        }
+        return *this;
+    }
 }
