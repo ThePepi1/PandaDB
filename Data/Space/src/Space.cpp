@@ -71,11 +71,9 @@ namespace DataStructures {
         }
         KMeans::Trainer trainer;
         {
-        auto stream = storage.getVectorStream(metadata.TrainingProportion, factory);
+        auto stream = storage.getVectorStream(metadata.TrainingProportion, factory); // This line will hurt potensialy on large datasets
         trainer.train(*productQuantizer, *codeBook, *stream, *metric,metadata.NumberOfIterations);
         }
-        // Building the Vamana index using Conector    
-            const std::string nodesPath = (path + "/nodes.dump ");
         
         long long count = 0;
         auto stream = storage.getVectorStream(factory);
@@ -83,19 +81,11 @@ namespace DataStructures {
         
         this->vamana->buildIndex(transletor, *codeBook, factory, metadata, *metric);
         
-        // Quantize all vectors in the storage as well as create a LinearStorage with Nodes so that we can build the Vamana index.
-        // Remove Node file
-        if(std::filesystem::exists(path + "/nodes.dump")) {
-            std::filesystem::remove(path + "/nodes.dump");
-        }
-        {
-        auto stream = storage.getVectorStream(factory);
+        stream->reset();
         while(stream->hasNext()){
             auto quant = productQuantizer->quantize(*stream->next(), *metric);
             dataQuantizations.push_back(quant);
         }        
-        }
-        
         this->SaveSpace();
         return *this;
     } 
