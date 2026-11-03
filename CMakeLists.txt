@@ -33,7 +33,6 @@ add_library(panda_lib SHARED
         Metrics/includes/EuclideMetrics.h
         Metrics/src/register.cpp
         Metrics/includes/register.h
-        Metrics/includes/MetricPlugin.h
         Metrics/src/CosineSimilarityMetric.cpp
         Metrics/includes/CosineSimilarityMetric.h
         Metrics/src/DotMetric.cpp
@@ -78,6 +77,12 @@ add_library(panda_lib SHARED
         Data/Space/src/Space.cpp
         Data/VectorStream/src/StreamTransletor.cpp
         Data/VectorStream/includes/StreamTransletor.h
+        Plugins/src/plugins.cpp
+        Plugins/includes/plugins.h
+        Plugins/includes/MetricPlugin.h
+        Encoder/include/IEncoder.h
+        Encoder/include/EncoderFactory.h
+        Encoder/src/EncoderFactory.cpp
 )
 
 target_include_directories(panda_lib PUBLIC

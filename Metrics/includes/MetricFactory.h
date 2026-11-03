@@ -17,7 +17,7 @@ namespace metrics {
         bool register_metric(const std::string& name, Creator creator);
 
         std::unique_ptr<IMetrics> create_metric(const std::string& name);
-
+        std::vector<std::string> get_registered_metrics() const;
     private:
         std::unordered_map<std::string, Creator> creators_;
     };

@@ -25,4 +25,11 @@ namespace metrics {
         }
         return it->second();
     }
+    std::vector<std::string> MetricFactory::get_registered_metrics() const {
+        std::vector<std::string> metrics;
+        for (const auto& pair : creators_) {
+            metrics.push_back(pair.first);
+        }
+        return metrics;
+    }
 }
